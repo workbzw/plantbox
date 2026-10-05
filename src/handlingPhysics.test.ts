@@ -17,6 +17,7 @@ import { deliveryTime, forkliftPose, jobPlan } from "./forkliftMotion.ts";
 import { HandlingPhysics, initHandlingPhysics } from "./handlingPhysics.ts";
 import { handledPallets, inventoryAt, SKUS, TRUCKS } from "./simulation.ts";
 import { truckPose } from "./truckMotion.ts";
+import { materialSnapshot } from "./cargoSnapshot.ts";
 
 test("rear-steered forklift obeys front-axle rolling constraints and stops for lift/gear changes", () => {
   for (let dock = 0; dock < 3; dock++) {
@@ -53,6 +54,40 @@ test("rear-steered forklift obeys front-axle rolling constraints and stops for l
         assert.ok(Math.abs(a.rot - b.rot) < 0.001);
       }
     }
+  }
+});
+
+test("startup snapshot and physical handoff have the same cargo identities, poses and delivery state", async () => {
+  await initHandlingPhysics();
+  const engine = new HandlingPhysics(0);
+  try {
+    for (const time of [0, 86, 200, 740, 797, 850, 1800]) {
+      engine.reset(time);
+      const snapshot = materialSnapshot(time);
+      assert.deepEqual(
+        snapshot.map((p) => p.id),
+        engine.cargo.map((p) => p.id),
+      );
+      assert.equal(
+        snapshot.filter((p) => p.delivered).length,
+        engine.deliveries.length,
+      );
+      for (let i = 0; i < snapshot.length; i++) {
+        const item = engine.cargo[i],
+          before = snapshot[i];
+        assert.equal(item.state, before.state);
+        assert.equal(item.onTruck, before.onTruck);
+        assert.equal(item.body.isEnabled(), before.state !== "departed");
+        const position = item.body.translation(),
+          rotation = item.body.rotation();
+        for (const axis of ["x", "y", "z"] as const)
+          assert.ok(Math.abs(position[axis] - before.position[axis]) < 1e-5);
+        for (const axis of ["x", "y", "z", "w"] as const)
+          assert.ok(Math.abs(rotation[axis] - before.rotation[axis]) < 1e-5);
+      }
+    }
+  } finally {
+    engine.dispose();
   }
 });
 

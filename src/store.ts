@@ -7,6 +7,7 @@ export type Page = "scene" | "inventory" | "shipments" | "activity";
 interface AppState {
   time: number;
   paused: boolean;
+  simulationReady: boolean;
   speed: number;
   page: Page;
   selected: Selection;
@@ -36,6 +37,7 @@ interface AppState {
 export const useStore = create<AppState>((set) => ({
   time: 86,
   paused: false,
+  simulationReady: false,
   speed: 1,
   page: "scene",
   selected: { kind: "site", id: "WH-01" },
@@ -52,7 +54,8 @@ export const useStore = create<AppState>((set) => ({
   camera: { view: "overview", seq: 0, zoom: 1, rotation: 0 },
   tick: (dt) =>
     set((s) => {
-      if (s.paused || !Number.isFinite(dt) || dt <= 0) return s;
+      if (!s.simulationReady || s.paused || !Number.isFinite(dt) || dt <= 0)
+        return s;
       const time = Math.min(DEMO_END, s.time + dt * s.speed);
       return time === DEMO_END
         ? {

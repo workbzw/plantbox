@@ -37,6 +37,34 @@ npm run preview # 预览 dist 生产构建
 - 左键拖动旋转、右键拖动平移、滚轮缩放；触屏支持单指旋转与双指缩放。
 - 点击模型、场景标签、月台或设备列表，查看相应详情。
 - `Space` 暂停/继续；`⌘K` / `Ctrl+K` 打开搜索；`Esc` 关闭弹窗。
+
+## 启动性能
+
+基础园区、物理引擎与精细光影分别加载。第一帧就包含车辆、叉车和全部初始托盘；Rapier 使用同一份纯数据快照接管这些对象，准备完成前模拟时钟保持不动，用户的暂停选择也会保留。精细光影随后启用，最终高画质参数与原版一致。
+
+同类托盘及叉车车身共享不可变几何体，各托盘仍保有独立对象、编号和物理刚体。字体使用从原始 TTF 无损转换的 WOFF2，保留原字形、字重及许可证。Three.js 和 Rapier 使用独立的内容哈希文件名；验证过单独修改界面文字不会改变这两个库的文件名。
+
+2026-10-05 与提交 `a1d5b03` 的生产构建对比：Apple M4 Pro、Chrome 无头浏览器、1440 × 900、关闭浏览器缓存，每种条件各测 3 次取中位数。两版均通过 Vite 生产预览启用 gzip，限速为下载 6 Mbps、延迟 80 ms。
+
+| 指标 | 优化前 | 优化后 | 变化 |
+| --- | ---: | ---: | --- |
+| 限速下含全部初始托盘的首轮 3D 绘制 | 2.930 s | 1.186 s | 缩短 59.5% |
+| 本机直连、同一首屏指标 | 0.481 s | 0.506 s | 增加 25 ms，主要收益在网络等待 |
+| 基础 3D 脚本传输量 | 1,134 KB | 259 KB | 减少约 77% |
+| 完整启动资源传输量，含后续物理与光影 | 1.712 MB | 1.399 MB | 减少 18.3% |
+| 首屏字体传输量 | 479 KB | 167 KB | 减少 65.1% |
+
+限速下，优化版精细光影约 1.65 秒就绪，物理作业约 2.49 秒就绪；园区可先查看和操作镜头。首屏指标由相同浏览器探针记录：42 个托盘标签已创建后的第一次 WebGL 绘制调用，不等同于浏览器 LCP，也不代表所有设备或真实线上网络。拆分主要改善可见时机与缓存复用，传输总量下降主要来自字体压缩。原始逐次时序摘要见 [`benchmarks/loading.json`](benchmarks/loading.json)。
+
+复测工具为 `scripts/measure-loading.cjs`，需运行环境提供 Playwright 和 Chromium；可以用 `PLAYWRIGHT_MODULE` 指定已安装的 Playwright 模块路径、`CHROME_PATH` 指定 Chrome 可执行文件。先执行 `npm run build` 和 `npm run preview`，再运行：
+
+```sh
+node scripts/measure-loading.cjs http://localhost:4173/ /tmp/plantbox-loading.json
+```
+
+字体可用安装了 `fonttools` 和 `brotli` 的 Python 运行 `scripts/convert-fonts.py` 重新生成。源 TTF 留存用于复现，页面只请求 WOFF2。
+
+部署时使用 `dist`，为带哈希的 `/assets/*` 配置 `Cache-Control: public, max-age=31536000, immutable`，为 HTML 使用重新验证策略，并启用 gzip 或 Brotli。实际线上缓存和压缩需要在对应托管平台配置；本次仅验证本地生产预览，未更改远程部署。
 - “查看仓内”切换屋顶；视角菜单可直接聚焦月台、堆场、仓内或俯视。
 
 ## 模拟边界
@@ -86,6 +114,9 @@ npm run preview # 预览 dist 生产构建
 | `src/forkliftMotion.ts` | 后轮转向、装卸动作阶段与作业路径 |
 | `src/handlingPhysics.ts` | 刚体、货叉接触约束、货物身份与交付确认 |
 | `src/HandlingScene.tsx` | 独立货物渲染与物理时钟 |
+| `src/cargoSnapshot.ts` | 静态首屏与物理初始化共用的货物快照 |
+| `src/SceneEffects.tsx` | 首帧之后加载的精细光影 |
+| `src/startup.ts` | 首屏绘制后的延迟初始化调度 |
 | `src/handlingPhysics.test.ts` | 连续物理搬运、缺货、重力与重播验证 |
 | `src/styles.css` | 视觉样式和响应式布局 |
 

@@ -1,15 +1,11 @@
 import { Suspense, memo, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import {
-  Environment,
-  Html,
-  Lightformer,
-  OrbitControls,
-} from "@react-three/drei";
-import { EffectComposer, N8AO, ToneMapping } from "@react-three/postprocessing";
+import type { ComponentType } from "react";
+import { Html } from "@react-three/drei/web/Html.js";
+import { OrbitControls } from "@react-three/drei/core/OrbitControls.js";
+import { afterPaint } from "./startup";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
-import { ToneMappingMode } from "postprocessing";
 
 function Label(props: React.ComponentProps<typeof Html>) {
   const gl = useThree((s) => s.gl);
@@ -210,7 +206,35 @@ function CameraRig() {
   );
 }
 
-function World() {
+function World({ onReady }: { onReady: () => void }) {
+  const [Effects, setEffects] = useState<ComponentType<{
+    quality: "high" | "balanced";
+  }> | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const cancel = afterPaint(() => {
+      void import("./SceneEffects")
+        .then((module) => {
+          if (!cancelled) setEffects(() => module.default);
+        })
+        .catch((error) => {
+          console.warn("Optional scene effects could not load", error);
+        });
+    });
+    return () => {
+      cancelled = true;
+      cancel();
+    };
+  }, []);
+  const announced = useRef(false);
+  useFrame(() => {
+    if (announced.current) return;
+    announced.current = true;
+    requestAnimationFrame(() => {
+      onReady();
+      performance.mark("plantbox:scene-ready");
+    });
+  });
   const physicalClock = useRef(useStore.getState().time);
   const roofOpen = useStore((s) => s.roofOpen);
   const labels = useStore((s) => s.labels);
@@ -231,7 +255,7 @@ function World() {
         position={[-30, 55, 35]}
         intensity={2.1}
         color="#fff5df"
-        castShadow
+        castShadow={Effects !== null}
         shadow-mapSize={quality === "high" ? [4096, 4096] : [2048, 2048]}
         shadow-camera-left={-65}
         shadow-camera-right={65}
@@ -248,22 +272,6 @@ function World() {
         intensity={0.45}
         color="#c8dcff"
       />
-      <Suspense fallback={null}>
-        <Environment resolution={128} frames={1}>
-          <Lightformer
-            intensity={1}
-            position={[0, 18, 0]}
-            rotation={[Math.PI / 2, 0, 0]}
-            scale={[50, 50, 1]}
-          />
-          <Lightformer
-            intensity={0.7}
-            position={[-30, 10, 10]}
-            rotation={[0, Math.PI / 2, 0]}
-            scale={[30, 20, 1]}
-          />
-        </Environment>
-      </Suspense>
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
         position={[0, -1.1, 0]}
@@ -333,17 +341,10 @@ function World() {
         </button>
       </Label>
       <CameraRig />
-      {quality === "high" && (
-        <EffectComposer multisampling={4}>
-          <N8AO
-            aoRadius={1.3}
-            intensity={1.1}
-            distanceFalloff={1}
-            halfRes
-            color="#294059"
-          />
-          <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
-        </EffectComposer>
+      {Effects && (
+        <Suspense fallback={null}>
+          <Effects quality={quality} />
+        </Suspense>
       )}
     </>
   );
@@ -369,14 +370,13 @@ function Scene() {
         }}
         onCreated={({ gl }) => {
           gl.shadowMap.type = THREE.PCFSoftShadowMap;
-          setReady(true);
         }}
         onPointerMissed={() =>
           useStore.getState().select({ kind: "site", id: "WH-01" })
         }
       >
         <Suspense fallback={null}>
-          <World />
+          <World onReady={() => setReady(true)} />
         </Suspense>
       </Canvas>
       {!ready && (

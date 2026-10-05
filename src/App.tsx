@@ -1323,6 +1323,7 @@ function Dialog({
 export default function App() {
   useStore((s) => s.deliveries); // Render ledger changes even while the simulation is paused.
   const page = useStore((s) => s.page),
+    simulationReady = useStore((s) => s.simulationReady),
     paused = useStore((s) => s.paused),
     speed = useStore((s) => s.speed),
     time = useStore((s) => s.time),
@@ -1463,7 +1464,7 @@ export default function App() {
             title="点击暂停或继续模拟"
           >
             <span className="live-pulse" />
-            {paused ? "已暂停" : "模拟运行"}
+            {paused ? "已暂停" : simulationReady ? "模拟运行" : "准备作业"}
             <span>{formatClock(time).slice(0, 5)}</span>
           </button>
           <span className="header-divider" />

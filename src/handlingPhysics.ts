@@ -11,7 +11,6 @@ import {
   DOCK_X,
   FLOOR_Y,
   FORKLIFT,
-  JOB_SECONDS,
   LOAD_END,
   LOAD_START,
   PALLET,
@@ -22,23 +21,18 @@ import {
   TRUCK_OFFSETS,
 } from "./logistics.ts";
 import type { DeliveryRecord } from "./logistics.ts";
-import {
-  deliveryTime,
-  forkliftPose,
-  jobPlan,
-  palletId,
-} from "./forkliftMotion.ts";
-import type { ForkliftPose } from "./forkliftMotion.ts";
+import { deliveryTime, forkliftPose } from "./forkliftMotion.ts";
 import { truckPose } from "./truckMotion.ts";
+import {
+  cargoSnapshot,
+  forkTransform,
+  multiplyRotation,
+  transformPoint,
+  truckCargoPose,
+  yaw,
+} from "./cargoSnapshot.ts";
+import type { CargoState, Quaternion, Vector } from "./cargoSnapshot.ts";
 
-type Vector = { x: number; y: number; z: number };
-type Quaternion = Vector & { w: number };
-export type CargoState =
-  | "source"
-  | "carried"
-  | "received"
-  | "loaded"
-  | "departed";
 export interface Cargo {
   id: string;
   dock: number;
@@ -56,61 +50,6 @@ export function initHandlingPhysics() {
   return (initPromise ??= RAPIER.init());
 }
 const STEP = 1 / 120;
-const yaw = (angle: number): Quaternion => ({
-  x: 0,
-  y: Math.sin(angle / 2),
-  z: 0,
-  w: Math.cos(angle / 2),
-});
-function multiplyRotation(a: Quaternion, b: Quaternion): Quaternion {
-  return {
-    x: a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
-    y: a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
-    z: a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w,
-    w: a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z,
-  };
-}
-export function forkTransform(p: ForkliftPose) {
-  const sy = Math.sin(p.rot / 2),
-    cy = Math.cos(p.rot / 2),
-    sx = Math.sin(p.tilt / 2),
-    cx = Math.cos(p.tilt / 2);
-  return {
-    position: {
-      x: p.x + p.lift * Math.sin(p.tilt) * Math.sin(p.rot),
-      y: FLOOR_Y + p.lift * Math.cos(p.tilt),
-      z: p.z + p.lift * Math.sin(p.tilt) * Math.cos(p.rot),
-    },
-    rotation: { x: cy * sx, y: sy * cx, z: -sy * sx, w: cy * cx },
-  };
-}
-function transformPoint(v: Vector, q: Quaternion, p: Vector) {
-  const ix = q.w * v.x + q.y * v.z - q.z * v.y,
-    iy = q.w * v.y + q.z * v.x - q.x * v.z,
-    iz = q.w * v.z + q.x * v.y - q.y * v.x,
-    iw = -q.x * v.x - q.y * v.y - q.z * v.z;
-  return {
-    x: p.x + ix * q.w - iw * q.x - iy * q.z + iz * q.y,
-    y: p.y + iy * q.w - iw * q.y - iz * q.x + ix * q.z,
-    z: p.z + iz * q.w - iw * q.z - ix * q.y + iy * q.x,
-  };
-}
-export function loadOnFork(p: ForkliftPose) {
-  const f = forkTransform(p);
-  return {
-    position: transformPoint(
-      {
-        x: 0,
-        y: FORKLIFT.tineThickness / 2 - PALLET.deckBottom,
-        z: FORKLIFT.cargoZ,
-      },
-      f.rotation,
-      f.position,
-    ),
-    rotation: f.rotation,
-  };
-}
-
 /** Dynamic pallets are never parented to a forklift or assigned its velocity.
  * A contact-gated rigid constraint stabilizes the supported load in transport.
  * Releasing it before lowering restores gravity/contact placement. Initial
@@ -226,29 +165,14 @@ export class HandlingPhysics {
     slot: number,
     localTime: number,
   ) {
-    const id = palletId(dock, cycle, slot),
-      inbound = dock === 1;
-    const delivered = localTime >= deliveryTime(cycle, dock, slot);
-    const departed =
-      delivered && !inbound && localTime >= cycle * CYCLE + DEPART_END;
-    const loaded = delivered && !inbound && !departed;
-    const pickup =
-      cycle * CYCLE +
-      LOAD_START +
-      slot * JOB_SECONDS +
-      jobPlan(cycle, dock, slot).pickupAt;
-    const carried = !delivered && localTime >= pickup;
-    let position: Vector = {
-      x: DOCK_X[dock] + STORAGE_X,
-      y: FLOOR_Y + (inbound ? cycle : STOCK_LAYERS - 1 - cycle) * PALLET.height,
-      z: SLOT_Z[slot],
-    };
-    let rotation = yaw(Math.PI / 2);
-    if ((inbound && !delivered) || loaded)
-      ({ position, rotation } = this.truckCargoPose(localTime, dock, slot));
-    if (carried)
-      ({ position, rotation } = loadOnFork(forkliftPose(localTime, dock)));
-    const onTruck = loaded || (inbound && !carried && !delivered);
+    const { id, state, position, rotation, onTruck, delivered } = cargoSnapshot(
+      dock,
+      cycle,
+      slot,
+      localTime,
+    );
+    const loaded = state === "loaded",
+      departed = state === "departed";
     const type =
       loaded || (onTruck && localTime % CYCLE < LOAD_START)
         ? RAPIER.RigidBodyDesc.kinematicPositionBased()
@@ -288,15 +212,7 @@ export class HandlingPhysics {
       slot,
       body,
       onTruck,
-      state: delivered
-        ? inbound
-          ? "received"
-          : departed
-            ? "departed"
-            : "loaded"
-        : carried
-          ? "carried"
-          : "source",
+      state,
     };
     if (loaded) this.secureOnTruck(item);
     this.cargo.push(item);
@@ -308,18 +224,6 @@ export class HandlingPhysics {
         slot,
         time: deliveryTime(cycle, dock, slot) - TRUCK_OFFSETS[dock],
       });
-  }
-  private truckCargoPose(localTime: number, dock: number, slot: number) {
-    const p = truckPose(localTime, dock),
-      rotation = yaw(p.rot);
-    return {
-      position: transformPoint(
-        { x: 0.65, y: TRUCK_BED_Y, z: SLOT_Z[slot] - 8.7 },
-        rotation,
-        { x: p.x, y: 0, z: p.z },
-      ),
-      rotation: yaw(p.rot + Math.PI * 1.5),
-    };
   }
   private secureOnTruck(item: Cargo) {
     const truck = truckPose(this.time + TRUCK_OFFSETS[item.dock], item.dock);
@@ -363,7 +267,7 @@ export class HandlingPhysics {
           false,
         );
       } else if (localTime % CYCLE < LOAD_START) {
-        const pose = this.truckCargoPose(localTime, item.dock, item.slot);
+        const pose = truckCargoPose(localTime, item.dock, item.slot);
         this.setKinematic(item.body, pose.position, pose.rotation, false);
       } else if (item.body.isKinematic()) {
         item.body.setBodyType(RAPIER.RigidBodyType.Dynamic, true);

@@ -1,0 +1,285 @@
+{
+  "conditions": {
+    "viewport": "1440x900",
+    "browser": "Chrome headless / Apple M4 Pro",
+    "cache": "disabled",
+    "runs": 3,
+    "network": "6 Mbps download, 80 ms latency",
+    "baseline": "a1d5b03",
+    "metric": "first WebGL draw after all 42 pallet labels have been created"
+  },
+  "profiles": {
+    "local": {
+      "ui": {
+        "before": 34.60000014305115,
+        "after": 30.90000009536743,
+        "reductionPercent": 10.693641712099245
+      },
+      "firstDraw": {
+        "before": 326.39999985694885,
+        "after": 506.10000014305115,
+        "reductionPercent": -55.0551471706064
+      },
+      "cargoFrame": {
+        "before": 481,
+        "after": 506.10000014305115,
+        "reductionPercent": -5.218295248035587
+      },
+      "totalBytes": {
+        "before": 1712391,
+        "after": 1399396,
+        "reductionPercent": 18.278243695511133
+      },
+      "fontBytes": {
+        "before": 478744,
+        "after": 166940,
+        "reductionPercent": 65.12958909145597
+      },
+      "physicsReadyAfter": 644.2999999523163,
+      "effectsReadyAfter": 568.7999999523163
+    },
+    "6mbps-80ms": {
+      "ui": {
+        "before": 341.39999985694885,
+        "after": 340.7999999523163,
+        "reductionPercent": 0.17574689656824072
+      },
+      "firstDraw": {
+        "before": 2782.699999809265,
+        "after": 1185.7999999523163,
+        "reductionPercent": 57.38671074734629
+      },
+      "cargoFrame": {
+        "before": 2930.0999999046326,
+        "after": 1185.7999999523163,
+        "reductionPercent": 59.530391454526765
+      },
+      "totalBytes": {
+        "before": 1712391,
+        "after": 1399396,
+        "reductionPercent": 18.278243695511133
+      },
+      "fontBytes": {
+        "before": 478744,
+        "after": 166940,
+        "reductionPercent": 65.12958909145597
+      },
+      "physicsReadyAfter": 2492.7000000476837,
+      "effectsReadyAfter": 1648.8999998569489
+    }
+  },
+  "baselineRuns": [
+    {
+      "profile": "local",
+      "run": 0,
+      "ui": 39.299999952316284,
+      "firstDraw": 326.39999985694885,
+      "cargoFrame": 482.5,
+      "totalBytes": 1712391,
+      "fontBytes": 478744,
+      "errors": [],
+      "marks": []
+    },
+    {
+      "profile": "local",
+      "run": 1,
+      "ui": 34.60000014305115,
+      "firstDraw": 325.30000019073486,
+      "cargoFrame": 466.80000019073486,
+      "totalBytes": 1712391,
+      "fontBytes": 478744,
+      "errors": [],
+      "marks": []
+    },
+    {
+      "profile": "local",
+      "run": 2,
+      "ui": 33.60000014305115,
+      "firstDraw": 327.5,
+      "cargoFrame": 481,
+      "totalBytes": 1712391,
+      "fontBytes": 478744,
+      "errors": [],
+      "marks": []
+    },
+    {
+      "profile": "6mbps-80ms",
+      "run": 0,
+      "ui": 342,
+      "firstDraw": 2782.699999809265,
+      "cargoFrame": 2932.0999999046326,
+      "totalBytes": 1712391,
+      "fontBytes": 478744,
+      "errors": [],
+      "marks": []
+    },
+    {
+      "profile": "6mbps-80ms",
+      "run": 1,
+      "ui": 338.90000009536743,
+      "firstDraw": 2762.600000143051,
+      "cargoFrame": 2901.800000190735,
+      "totalBytes": 1712391,
+      "fontBytes": 478744,
+      "errors": [],
+      "marks": []
+    },
+    {
+      "profile": "6mbps-80ms",
+      "run": 2,
+      "ui": 341.39999985694885,
+      "firstDraw": 2790,
+      "cargoFrame": 2930.0999999046326,
+      "totalBytes": 1712391,
+      "fontBytes": 478744,
+      "errors": [],
+      "marks": []
+    }
+  ],
+  "optimizedRuns": [
+    {
+      "profile": "local",
+      "run": 0,
+      "ui": 30.90000009536743,
+      "firstDraw": 506.10000014305115,
+      "cargoFrame": 506.10000014305115,
+      "totalBytes": 1399396,
+      "fontBytes": 166940,
+      "errors": [],
+      "marks": [
+        {
+          "name": "plantbox:scene-ready",
+          "time": 548.2999999523163
+        },
+        {
+          "name": "plantbox:effects-ready",
+          "time": 569.7000000476837
+        },
+        {
+          "name": "plantbox:physics-ready",
+          "time": 665.7000000476837
+        }
+      ]
+    },
+    {
+      "profile": "local",
+      "run": 1,
+      "ui": 31.5,
+      "firstDraw": 502.39999985694885,
+      "cargoFrame": 502.39999985694885,
+      "totalBytes": 1399396,
+      "fontBytes": 166940,
+      "errors": [],
+      "marks": [
+        {
+          "name": "plantbox:scene-ready",
+          "time": 540.8999998569489
+        },
+        {
+          "name": "plantbox:effects-ready",
+          "time": 560.3999998569489
+        },
+        {
+          "name": "plantbox:physics-ready",
+          "time": 644.2999999523163
+        }
+      ]
+    },
+    {
+      "profile": "local",
+      "run": 2,
+      "ui": 30.90000009536743,
+      "firstDraw": 507.7000000476837,
+      "cargoFrame": 507.7000000476837,
+      "totalBytes": 1399396,
+      "fontBytes": 166940,
+      "errors": [],
+      "marks": [
+        {
+          "name": "plantbox:scene-ready",
+          "time": 547.2000000476837
+        },
+        {
+          "name": "plantbox:effects-ready",
+          "time": 568.7999999523163
+        },
+        {
+          "name": "plantbox:physics-ready",
+          "time": 641
+        }
+      ]
+    },
+    {
+      "profile": "6mbps-80ms",
+      "run": 0,
+      "ui": 340.7999999523163,
+      "firstDraw": 1179.7999999523163,
+      "cargoFrame": 1179.7999999523163,
+      "totalBytes": 1399396,
+      "fontBytes": 166940,
+      "errors": [],
+      "marks": [
+        {
+          "name": "plantbox:scene-ready",
+          "time": 1220.5999999046326
+        },
+        {
+          "name": "plantbox:effects-ready",
+          "time": 1645
+        },
+        {
+          "name": "plantbox:physics-ready",
+          "time": 2487.0999999046326
+        }
+      ]
+    },
+    {
+      "profile": "6mbps-80ms",
+      "run": 1,
+      "ui": 341,
+      "firstDraw": 1185.7999999523163,
+      "cargoFrame": 1185.7999999523163,
+      "totalBytes": 1399396,
+      "fontBytes": 166940,
+      "errors": [],
+      "marks": [
+        {
+          "name": "plantbox:scene-ready",
+          "time": 1226
+        },
+        {
+          "name": "plantbox:effects-ready",
+          "time": 1652.2000000476837
+        },
+        {
+          "name": "plantbox:physics-ready",
+          "time": 2492.7000000476837
+        }
+      ]
+    },
+    {
+      "profile": "6mbps-80ms",
+      "run": 2,
+      "ui": 339,
+      "firstDraw": 1185.8999998569489,
+      "cargoFrame": 1185.8999998569489,
+      "totalBytes": 1399396,
+      "fontBytes": 166940,
+      "errors": [],
+      "marks": [
+        {
+          "name": "plantbox:scene-ready",
+          "time": 1225.2999999523163
+        },
+        {
+          "name": "plantbox:effects-ready",
+          "time": 1648.8999998569489
+        },
+        {
+          "name": "plantbox:physics-ready",
+          "time": 2493.2999999523163
+        }
+      ]
+    }
+  ]
+}

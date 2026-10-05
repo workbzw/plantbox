@@ -91,6 +91,23 @@ class Builder {
   }
 }
 
+// A bounded session cache: three pallet variants and one forklift body.
+// Clones share immutable geometry/materials, while each load keeps its own
+// Object3D transform, label and independent Rapier rigid body.
+const sharedModels = new Map<string, THREE.Group>();
+function sharedModel(key: string, create: () => THREE.Group) {
+  if (!sharedModels.has(key)) sharedModels.set(key, create());
+  return sharedModels.get(key)!;
+}
+if (import.meta.hot)
+  import.meta.hot.dispose(() => {
+    for (const model of sharedModels.values())
+      model.traverse((object) => {
+        if (object instanceof THREE.Mesh) object.geometry.dispose();
+      });
+    sharedModels.clear();
+  });
+
 export function Sign({
   text,
   position,
@@ -684,35 +701,32 @@ function TruckWheel({ side }: { side: number }) {
 }
 
 export function CargoPallet({ dock, id }: { dock: number; id: string }) {
-  const model = useMemo(() => {
-    const b = new Builder();
-    for (const x of [-0.32, 0, 0.32])
-      b.box([0.13, 0.125, 1.2], [x, 0.0625, 0], "#ac8356");
-    for (let i = 0; i < 5; i++)
-      b.box([0.8, 0.035, 0.215], [0, 0.1425, -0.49 + i * 0.245], "#cfad78");
-    const color = ["#bf915c", "#4877b0", "#ccb488"][dock];
-    for (const z of [-0.29, 0.29]) {
-      b.round([0.74, 0.56, 0.54], [0, 0.44, z], color, 0.018);
-      if (dock === 1) {
-        b.box([0.76, 0.045, 0.56], [0, 0.695, z], "#355d93");
-        b.box([0.22, 0.055, 0.014], [0, 0.56, z + 0.275], "#264a74");
-      } else {
-        b.box([0.065, 0.565, 0.548], [0, 0.442, z], "#dec794");
-        b.box([0.745, 0.04, 0.548], [0, 0.62, z], "#b49970");
-      }
-    }
-    return b.build();
-  }, [dock]);
-  useEffect(
-    () => () =>
-      model.traverse((o) => {
-        if (o instanceof THREE.Mesh) o.geometry.dispose();
-      }),
-    [model],
+  const model = useMemo(
+    () =>
+      sharedModel(`cargo-${dock}`, () => {
+        const b = new Builder();
+        for (const x of [-0.32, 0, 0.32])
+          b.box([0.13, 0.125, 1.2], [x, 0.0625, 0], "#ac8356");
+        for (let i = 0; i < 5; i++)
+          b.box([0.8, 0.035, 0.215], [0, 0.1425, -0.49 + i * 0.245], "#cfad78");
+        const color = ["#bf915c", "#4877b0", "#ccb488"][dock];
+        for (const z of [-0.29, 0.29]) {
+          b.round([0.74, 0.56, 0.54], [0, 0.44, z], color, 0.018);
+          if (dock === 1) {
+            b.box([0.76, 0.045, 0.56], [0, 0.695, z], "#355d93");
+            b.box([0.22, 0.055, 0.014], [0, 0.56, z + 0.275], "#264a74");
+          } else {
+            b.box([0.065, 0.565, 0.548], [0, 0.442, z], "#dec794");
+            b.box([0.745, 0.04, 0.548], [0, 0.62, z], "#b49970");
+          }
+        }
+        return b.build();
+      }).clone(true),
+    [dock],
   );
   return (
     <group>
-      <primitive object={model} />
+      <primitive object={model} dispose={null} />
       <Sign
         text={id.replace("PAL-", "P")}
         resolution={256}
@@ -735,36 +749,33 @@ export function ForkliftModel({
   mastRef: React.RefObject<THREE.Group | null>;
   wheelRig: React.RefObject<THREE.Group | null>;
 }) {
-  const body = useMemo(() => {
-    const b = new Builder();
-    b.round([1.4, 0.75, 1.9], [0, 0.65, -0.2], "#e7b237", 0.18, 0.1);
-    b.round([1.37, 0.95, 0.63], [0, 0.9, -0.87], "#edbc45", 0.16);
-    b.box([1.3, 0.12, 1.8], [0, 2.54, -0.05], "#344854");
-    for (const x of [-0.58, 0.58])
-      for (const z of [-0.67, 0.58])
-        b.box([0.065, 1.6, 0.065], [x, 1.78, z], "#334452");
-    b.round([0.63, 0.18, 0.58], [0, 1.12, -0.1], "#34444c", 0.08);
-    b.round([0.62, 0.65, 0.1], [0, 1.38, -0.38], "#34444c", 0.04);
-    b.box([0.045, 0.4, 0.06], [0, 1.27, 0.36], "#394952", [0.4, 0, 0]);
-    b.cylinder(0.17, 0.035, [0, 1.48, 0.4], "#33434e", [0.55, 0, 0]);
-    b.round([0.43, 0.55, 0.29], [0, 1.55, -0.08], "#527b8f", 0.08);
-    b.sphere([0.16, 0.2, 0.16], [0, 1.96, -0.04], "#d6b596");
-    b.sphere([0.2, 0.12, 0.19], [0, 2.1, -0.04], "#f5d46a");
-    for (const x of [-0.24, 0.24])
-      b.box([0.1, 0.11, 0.4], [x, 1.57, 0.15], "#527b8f");
-    b.cylinder(0.1, 0.18, [0.3, 2.7, -0.4], "#f69835");
-    return b.build();
-  }, []);
-  useEffect(
-    () => () =>
-      body.traverse((o) => {
-        if (o instanceof THREE.Mesh) o.geometry.dispose();
-      }),
-    [body],
+  const body = useMemo(
+    () =>
+      sharedModel("forklift", () => {
+        const b = new Builder();
+        b.round([1.4, 0.75, 1.9], [0, 0.65, -0.2], "#e7b237", 0.18, 0.1);
+        b.round([1.37, 0.95, 0.63], [0, 0.9, -0.87], "#edbc45", 0.16);
+        b.box([1.3, 0.12, 1.8], [0, 2.54, -0.05], "#344854");
+        for (const x of [-0.58, 0.58])
+          for (const z of [-0.67, 0.58])
+            b.box([0.065, 1.6, 0.065], [x, 1.78, z], "#334452");
+        b.round([0.63, 0.18, 0.58], [0, 1.12, -0.1], "#34444c", 0.08);
+        b.round([0.62, 0.65, 0.1], [0, 1.38, -0.38], "#34444c", 0.04);
+        b.box([0.045, 0.4, 0.06], [0, 1.27, 0.36], "#394952", [0.4, 0, 0]);
+        b.cylinder(0.17, 0.035, [0, 1.48, 0.4], "#33434e", [0.55, 0, 0]);
+        b.round([0.43, 0.55, 0.29], [0, 1.55, -0.08], "#527b8f", 0.08);
+        b.sphere([0.16, 0.2, 0.16], [0, 1.96, -0.04], "#d6b596");
+        b.sphere([0.2, 0.12, 0.19], [0, 2.1, -0.04], "#f5d46a");
+        for (const x of [-0.24, 0.24])
+          b.box([0.1, 0.11, 0.4], [x, 1.57, 0.15], "#527b8f");
+        b.cylinder(0.1, 0.18, [0.3, 2.7, -0.4], "#f69835");
+        return b.build();
+      }).clone(true),
+    [],
   );
   return (
     <group>
-      <primitive object={body} />
+      <primitive object={body} dispose={null} />
       <group ref={wheelRig}>
         {[-0.73, 0.73].flatMap((x) =>
           [-0.8, 0.5].map((z) => (

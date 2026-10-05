@@ -80,6 +80,7 @@ test("event ledger never includes future or duplicate events", () => {
 
 test("pause, speed, completion and reset share one deterministic clock", () => {
   useStore.getState().reset();
+  useStore.setState({ simulationReady: true });
   useStore.getState().togglePause();
   useStore.getState().tick(10);
   assert.equal(useStore.getState().time, 86);
@@ -98,4 +99,20 @@ test("pause, speed, completion and reset share one deterministic clock", () => {
   assert.deepEqual(useStore.getState().adjustments, {});
   assert.equal(useStore.getState().time, 86);
   assert.equal(useStore.getState().speed, 1);
+});
+
+test("startup freezes simulation time and preserves a user's pause until physics is ready", () => {
+  useStore.getState().reset();
+  useStore.setState({ simulationReady: false });
+  useStore.getState().tick(10);
+  assert.equal(useStore.getState().time, 86);
+  assert.equal(useStore.getState().deliveries, undefined);
+  useStore.getState().togglePause();
+  useStore.setState({ simulationReady: true });
+  useStore.getState().tick(10);
+  assert.equal(useStore.getState().time, 86);
+  useStore.getState().togglePause();
+  useStore.getState().tick(0.5);
+  assert.equal(useStore.getState().time, 86.5);
+  useStore.getState().reset();
 });
