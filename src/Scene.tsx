@@ -1,3 +1,5 @@
+import { tr } from "./i18n";
+import type { Locale } from "./routing";
 import { Suspense, memo, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import type { ComponentType } from "react";
@@ -130,7 +132,7 @@ function MovingTruck({
         >
           <span style={{ background: data.color }} />
           {data.id}
-          <b>{data.direction === "inbound" ? "入库" : "出库"}</b>
+          <b>{data.direction === "inbound" ? tr("入库") : tr("出库")}</b>
         </button>
       </Label>
     </group>
@@ -206,7 +208,7 @@ function CameraRig() {
   );
 }
 
-function World({ onReady }: { onReady: () => void }) {
+function World({ onReady }: { locale: Locale; onReady: () => void }) {
   const [Effects, setEffects] = useState<ComponentType<{
     quality: "high" | "balanced";
   }> | null>(null);
@@ -300,8 +302,8 @@ function World({ onReady }: { onReady: () => void }) {
         >
           <span className="tag-cube">▣</span>
           <div>
-            <b>滨河仓储中心</b>
-            <small>WH-01 · 运行正常</small>
+            <b>{tr("滨河仓储中心")}</b>
+            <small>{tr("WH-01 · 运行正常")}</small>
           </div>
         </button>
       </Label>
@@ -337,7 +339,8 @@ function World({ onReady }: { onReady: () => void }) {
           }}
         >
           <span className="small-dot teal" />
-          集装箱堆场 <b>03</b>
+          {tr("集装箱堆场")}
+          <b>03</b>
         </button>
       </Label>
       <CameraRig />
@@ -350,12 +353,12 @@ function World({ onReady }: { onReady: () => void }) {
   );
 }
 
-function Scene() {
+function Scene({ locale }: { locale: Locale }) {
   const page = useStore((s) => s.page);
   const quality = useStore((s) => s.quality);
   const [ready, setReady] = useState(false);
   return (
-    <div className="scene-canvas" aria-label="可交互的三维仓储园区">
+    <div className="scene-canvas" aria-label={tr("可交互的三维仓储园区")}>
       <Canvas
         frameloop={page === "scene" ? "always" : "never"}
         orthographic
@@ -376,14 +379,14 @@ function Scene() {
         }
       >
         <Suspense fallback={null}>
-          <World onReady={() => setReady(true)} />
+          <World locale={locale} onReady={() => setReady(true)} />
         </Suspense>
       </Canvas>
       {!ready && (
         <div className="scene-loading">
           <span className="loading-cube">▣</span>
-          <strong>正在准备园区场景</strong>
-          <small>建筑、车辆与作业数据加载中</small>
+          <strong>{tr("正在准备园区场景")}</strong>
+          <small>{tr("建筑、车辆与作业数据加载中")}</small>
         </div>
       )}
     </div>

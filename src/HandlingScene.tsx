@@ -1,3 +1,4 @@
+import { tr } from "./i18n";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Html } from "@react-three/drei/web/Html.js";
@@ -160,7 +161,9 @@ export function HandlingScene({ clock }: { clock: React.RefObject<number> }) {
             if (world.failures.length && !state.paused)
               useStore.setState({
                 paused: true,
-                notice: `货物未确认落位，已暂停检查：${world.failures[0]}`,
+                notice: tr("货物未确认落位，已暂停检查：{0}", {
+                  0: world.failures[0],
+                }),
               });
           }, 16);
         })
@@ -168,7 +171,7 @@ export function HandlingScene({ clock }: { clock: React.RefObject<number> }) {
           if (cancelled) return;
           useStore.setState({
             paused: true,
-            notice: `货物物理引擎加载失败：${String(error)}`,
+            notice: tr("货物物理引擎加载失败：{0}", { 0: String(error) }),
           });
         });
     });

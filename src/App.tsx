@@ -1,3 +1,8 @@
+import { tr } from "./i18n";
+import { currentLocale, routeHref } from "./routing";
+import type { Locale } from "./routing";
+import { ProjectMenu, LanguageSwitch } from "./WebsiteNav";
+import "./styles.css";
 import { Component, lazy, Suspense, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import {
@@ -53,23 +58,48 @@ import {
   latestMovements as deriveLatestMovements,
   occupiedPallets as deriveOccupiedPallets,
   phaseAt as derivePhaseAt,
-  phaseLabel,
-  SKUS,
-  TRUCKS,
+  phaseLabel as derivePhaseLabel,
+  SKUS as sourceSkus,
+  TRUCKS as sourceTrucks,
 } from "./simulation";
 import type { Selection } from "./simulation";
 import { forkliftPose, handlingLabels, palletId } from "./forkliftMotion";
+const localizedSku = <
+  T extends { name: string; category: string; unit: string },
+>(
+  s: T,
+): T => ({
+  ...s,
+  name: tr(s.name),
+  category: tr(s.category),
+  unit: tr(s.unit),
+});
+const skus = () => sourceSkus.map(localizedSku);
+const trucks = () =>
+  sourceTrucks.map((truck) => ({
+    ...truck,
+    plate: tr(truck.plate),
+    carrier: tr(truck.carrier),
+    driver: tr(truck.driver),
+    destination: tr(truck.destination),
+  }));
+const phaseLabel = (...args: Parameters<typeof derivePhaseLabel>) =>
+  tr(derivePhaseLabel(...args));
 const ledger = () => useStore.getState().deliveries;
 const phaseAt = (time: number, dock = 0) => derivePhaseAt(time, dock, ledger());
 const handledPallets = (time: number, dock = 0) =>
   deriveHandledPallets(time, dock, ledger());
 const inventoryAt = (time: number, adjustments: Record<string, number> = {}) =>
-  deriveInventoryAt(time, adjustments, ledger());
+  deriveInventoryAt(time, adjustments, ledger()).map(localizedSku);
 const occupiedPallets = (
   time: number,
   adjustments: Record<string, number> = {},
 ) => deriveOccupiedPallets(time, adjustments, ledger());
-const latestMovements = (time: number) => deriveLatestMovements(time, ledger());
+const latestMovements = (time: number) =>
+  deriveLatestMovements(time, ledger()).map((event) => ({
+    ...event,
+    sku: tr(event.sku),
+  }));
 const Scene = lazy(() => import("./Scene"));
 
 function IconButton({
@@ -131,6 +161,7 @@ function StatSpark({ down = false }: { down?: boolean }) {
     </svg>
   );
 }
+const localeSeparator = () => (currentLocale() === "zh" ? "、" : ", ");
 const fmt = (n: number) => n.toLocaleString("en-US");
 
 class SceneBoundary extends Component<
@@ -145,10 +176,10 @@ class SceneBoundary extends Component<
     return this.state.failed ? (
       <div className="scene-loading">
         <Box size={38} />
-        <strong>3D 场景暂时无法启动</strong>
-        <p>请确认浏览器已启用硬件加速，然后重试。</p>
+        <strong>{tr("3D 场景暂时无法启动")}</strong>
+        <p>{tr("请确认浏览器已启用硬件加速，然后重试。")}</p>
         <button className="primary-button" onClick={() => location.reload()}>
-          重新加载
+          {tr("重新加载")}
         </button>
       </div>
     ) : (
@@ -160,11 +191,11 @@ class SceneBoundary extends Component<
 function Kpis() {
   const time = useStore((s) => s.time),
     adjustments = useStore((s) => s.adjustments);
-  const onSite = TRUCKS.filter(
+  const onSite = trucks().filter(
     (t) =>
       !["arriving", "transit"].includes(phaseAt(time + t.offset, t.dock).phase),
   ).length;
-  const occupied = TRUCKS.filter((t) =>
+  const occupied = trucks().filter((t) =>
     ["docking", "loading"].includes(phaseAt(time + t.offset, t.dock).phase),
   ).length;
   const stock = occupiedPallets(time, adjustments);
@@ -176,18 +207,18 @@ function Kpis() {
       >
         <span className="kpi-caption">
           <Package size={15} />
-          实物库存
+          {tr("实物库存")}
           <ChevronRight size={13} />
         </span>
         <div className="kpi-number">
           {fmt(stock)}
-          <span>托盘</span>
+          <span>{tr("托盘")}</span>
         </div>
         <div className="kpi-bottom">
           <span className="positive">
             ↑ {((stock / 1250 - 1) * 100).toFixed(1)}%
           </span>
-          <span>较昨日</span>
+          <span>{tr("较昨日")}</span>
           <StatSpark />
         </div>
       </button>
@@ -197,7 +228,7 @@ function Kpis() {
       >
         <span className="kpi-caption">
           <Warehouse size={15} />
-          作业月台
+          {tr("作业月台")}
           <ChevronRight size={13} />
         </span>
         <div className="kpi-number">
@@ -210,7 +241,10 @@ function Kpis() {
               <i key={i} className={i < occupied ? "filled" : ""} />
             ))}
           </span>
-          <span>{occupied} 个正在作业</span>
+          <span>
+            {occupied}
+            {tr("个正在作业")}
+          </span>
         </div>
       </button>
       <button
@@ -219,29 +253,33 @@ function Kpis() {
       >
         <span className="kpi-caption">
           <Truck size={15} />
-          场内车辆
+          {tr("场内车辆")}
           <ChevronRight size={13} />
         </span>
         <div className="kpi-number">
           {String(onSite).padStart(2, "0")}
-          <span>辆</span>
+          <span>{tr("辆")}</span>
         </div>
         <div className="kpi-bottom">
           <span className="small-dot blue" />
-          <span>今日已出库 {23 + Math.floor(time / 240) * 3} 辆</span>
+          <span>
+            {tr("今日已出库")}
+            {23 + Math.floor(time / 240) * 3}
+            {tr("辆")}
+          </span>
         </div>
       </button>
       <div className="kpi-card">
         <span className="kpi-caption">
           <ShieldCheck size={15} />
-          准时交付率
+          {tr("准时交付率")}
         </span>
         <div className="kpi-number">
           98.6<span>%</span>
         </div>
         <div className="kpi-bottom">
           <span className="positive">↑ 2.1%</span>
-          <span>近 30 天</span>
+          <span>{tr("近 30 天")}</span>
           <StatSpark />
         </div>
       </div>
@@ -260,11 +298,11 @@ function CameraTools() {
           <Map size={15} />
           {
             {
-              overview: "园区视角",
-              dock: "月台视角",
-              storage: "堆场视角",
-              top: "俯视视角",
-              interior: "仓内视角",
+              overview: tr("园区视角"),
+              dock: tr("月台视角"),
+              storage: tr("堆场视角"),
+              top: tr("俯视视角"),
+              interior: tr("仓内视角"),
             }[useStore((s) => s.camera.view)]
           }
           <ChevronDown size={13} />
@@ -273,11 +311,11 @@ function CameraTools() {
           <div className="view-menu">
             {(
               [
-                ["overview", "园区全景"],
-                ["dock", "装卸月台"],
-                ["storage", "集装箱堆场"],
-                ["top", "垂直俯视"],
-                ["interior", "仓库内部"],
+                ["overview", tr("园区全景")],
+                ["dock", tr("装卸月台")],
+                ["storage", tr("集装箱堆场")],
+                ["top", tr("垂直俯视")],
+                ["interior", tr("仓库内部")],
               ] as const
             ).map(([id, name]) => (
               <button
@@ -298,35 +336,35 @@ function CameraTools() {
           onClick={() => useStore.getState().toggleRoof()}
         >
           <Layers3 size={15} />
-          {roofOpen ? "合上屋顶" : "查看仓内"}
+          {roofOpen ? tr("合上屋顶") : tr("查看仓内")}
         </button>
       </div>
       <div className="camera-tools">
         <IconButton
           icon={ZoomIn}
-          label="放大场景"
+          label={tr("放大场景")}
           onClick={() => useStore.getState().zoomCamera(1)}
         />
         <IconButton
           icon={ZoomOut}
-          label="缩小场景"
+          label={tr("缩小场景")}
           onClick={() => useStore.getState().zoomCamera(-1)}
         />
         <span />
         <IconButton
           icon={RotateCw}
-          label="旋转 90 度"
+          label={tr("旋转 90 度")}
           onClick={() => useStore.getState().rotateCamera()}
         />
         <IconButton
           icon={Crosshair}
-          label="重置为园区全景"
+          label={tr("重置为园区全景")}
           onClick={() => useStore.getState().setCamera("overview")}
         />
         <span />
         <IconButton
           icon={MapPin}
-          label={labels ? "隐藏场景标签" : "显示场景标签"}
+          label={labels ? tr("隐藏场景标签") : tr("显示场景标签")}
           active={labels}
           onClick={() => useStore.getState().toggleLabels()}
         />
@@ -340,12 +378,12 @@ function MiniMap() {
     <button
       className="minimap"
       onClick={() => useStore.getState().setCamera("top")}
-      aria-label="切换到园区俯视图"
-      title="查看园区俯视图"
+      aria-label={tr("切换到园区俯视图")}
+      title={tr("查看园区俯视图")}
     >
       <span>
         <Crosshair size={11} />
-        园区导览
+        {tr("园区导览")}
       </span>
       <svg viewBox="0 0 156 92" aria-hidden="true">
         <rect x="3" y="4" width="148" height="80" rx="4" fill="#e2e9e7" />
@@ -388,8 +426,8 @@ function OperationTimeline() {
   const selected = useStore((s) => s.selected),
     time = useStore((s) => s.time);
   const truck =
-    TRUCKS.find((t) => selected.kind === "truck" && selected.id === t.id) ??
-    TRUCKS[0];
+    trucks().find((t) => selected.kind === "truck" && selected.id === t.id) ??
+    trucks()[0];
   const info = phaseAt(time + truck.offset, truck.dock);
   const phaseIndex = {
     arriving: 0,
@@ -399,11 +437,11 @@ function OperationTimeline() {
     transit: 4,
   }[info.phase];
   const steps = [
-    "车辆入园",
-    "月台就位",
-    truck.direction === "inbound" ? "货物卸载" : "货物装载",
-    "离场确认",
-    "运输配送",
+    tr("车辆入园"),
+    tr("月台就位"),
+    truck.direction === "inbound" ? tr("货物卸载") : tr("货物装载"),
+    tr("离场确认"),
+    tr("运输配送"),
   ];
   return (
     <div className="operation-bar">
@@ -413,14 +451,15 @@ function OperationTimeline() {
         </span>
         <div>
           <strong>
-            正在追踪 <span>{truck.id}</span>
+            {tr("正在追踪")}
+            <span>{truck.id}</span>
           </strong>
           <small>
             {truck.shipment} <span>·</span> {truck.destination}
           </small>
         </div>
         <button
-          aria-label="查看当前运单"
+          aria-label={tr("查看当前运单")}
           onClick={() => {
             useStore.getState().select({ kind: "truck", id: truck.id });
           }}
@@ -444,12 +483,12 @@ function OperationTimeline() {
             <strong>{step}</strong>
             <small>
               {i < phaseIndex
-                ? "已完成"
+                ? tr("已完成")
                 : i === phaseIndex
                   ? info.phase === "loading"
-                    ? `${info.completed} / 6 托盘`
-                    : "进行中"
-                  : "待开始"}
+                    ? tr("{0} / 6 托盘", { 0: info.completed })
+                    : tr("进行中")
+                  : tr("待开始")}
             </small>
           </div>
         ))}
@@ -463,7 +502,7 @@ function DockList() {
     selected = useStore((s) => s.selected);
   return (
     <div className="dock-list">
-      {TRUCKS.map((t, i) => {
+      {trucks().map((t, i) => {
         const info = phaseAt(time + t.offset, t.dock),
           active = ["docking", "loading"].includes(info.phase);
         return (
@@ -481,11 +520,16 @@ function DockList() {
             <span className="dock-info">
               <strong>
                 {t.id}
-                <span>{t.direction === "inbound" ? "入库" : "出库"}</span>
+                <span>
+                  {t.direction === "inbound" ? tr("入库") : tr("出库")}
+                </span>
               </strong>
               <small>
                 {active
-                  ? `${phaseLabel(info.phase, t.direction === "inbound")} · ${info.completed}/6 托盘`
+                  ? tr("{0} · {1}/6 托盘", {
+                      0: phaseLabel(info.phase, t.direction === "inbound"),
+                      1: info.completed,
+                    })
                   : phaseLabel(info.phase)}
               </small>
               <span className="thin-progress">
@@ -518,15 +562,15 @@ function SiteDetails() {
         </span>
         <div>
           <span className="eyebrow">WAREHOUSE · WH-01</span>
-          <h2>滨河仓储中心</h2>
+          <h2>{tr("滨河仓储中心")}</h2>
           <p>
             <MapPin size={12} />
-            上海 · 闵行物流园
+            {tr("上海 · 闵行物流园")}
           </p>
         </div>
       </div>
       <div className="site-state">
-        <Status>运行正常</Status>
+        <Status>{tr("运行正常")}</Status>
         <span>
           <Clock3 size={12} />
           07:00 – 22:00
@@ -534,7 +578,7 @@ function SiteDetails() {
       </div>
       <div className="capacity">
         <div>
-          <span>库容使用率</span>
+          <span>{tr("库容使用率")}</span>
           <strong>
             {((stock / 1800) * 100).toFixed(1)}
             <small>%</small>
@@ -545,27 +589,32 @@ function SiteDetails() {
         </div>
         <p>
           <span>
-            <b>{fmt(stock)}</b> / 1,800 托盘位
+            <b>{fmt(stock)}</b>
+            {tr("/ 1,800 托盘位")}
           </span>
-          <span>余量 {fmt(1800 - stock)}</span>
+          <span>
+            {tr("余量")}
+            {fmt(1800 - stock)}
+          </span>
         </p>
       </div>
       <div className="section-heading">
         <h3>
-          装卸月台<span>03</span>
+          {tr("装卸月台")}
+          <span>03</span>
         </h3>
         <button onClick={() => useStore.getState().setCamera("dock")}>
-          聚焦月台
+          {tr("聚焦月台")}
           <Crosshair size={13} />
         </button>
       </div>
       <DockList />
       <div className="section-heading equipment-heading">
-        <h3>作业设备</h3>
-        <span className="muted">在线 3 / 3</span>
+        <h3>{tr("作业设备")}</h3>
+        <span className="muted">{tr("在线 3 / 3")}</span>
       </div>
       <div className="forklift-list">
-        {TRUCKS.map((t, i) => (
+        {trucks().map((t, i) => (
           <button
             key={t.id}
             onClick={() => {
@@ -581,7 +630,9 @@ function SiteDetails() {
             <div>
               <strong>FL-0{i + 1}</strong>
               <small>
-                {handlingLabels[forkliftPose(time + t.offset, t.dock).stage]}
+                {tr(
+                  handlingLabels[forkliftPose(time + t.offset, t.dock).stage],
+                )}
               </small>
             </div>
             <span className="battery">
@@ -600,8 +651,14 @@ function SiteDetails() {
         >
           <span className="alert-symbol">!</span>
           <div>
-            <strong>{low.length} 项库存需要关注</strong>
-            <small>{low.map((s) => s.name).join("、")}低于补货点</small>
+            <strong>
+              {low.length}
+              {tr("项库存需要关注")}
+            </strong>
+            <small>
+              {low.map((s) => s.name).join(localeSeparator())}
+              {tr("低于补货点")}
+            </small>
           </div>
           <ChevronRight size={15} />
         </button>
@@ -618,17 +675,17 @@ function ObjectDetails() {
   const palletDock =
     selected.kind === "pallet" ? Number(selected.id.split("-")[1]) - 1 : -1;
   const truck =
-    TRUCKS[palletDock] ??
-    TRUCKS.find((t) => t.id === selected.id) ??
-    TRUCKS[Math.max(0, Number(selected.id.slice(-1)) - 1) % 3];
+    trucks()[palletDock] ??
+    trucks().find((t) => t.id === selected.id) ??
+    trucks()[Math.max(0, Number(selected.id.slice(-1)) - 1) % 3];
   const info = phaseAt(time + truck.offset, truck.dock);
   const forklift = forkliftPose(time + truck.offset, truck.dock);
   const kindNames = {
-    site: "仓储站点",
-    truck: "运输车辆",
-    forklift: "作业叉车",
-    container: "集装箱",
-    pallet: "货物托盘",
+    site: tr("仓储站点"),
+    truck: tr("运输车辆"),
+    forklift: tr("作业叉车"),
+    container: tr("集装箱"),
+    pallet: tr("货物托盘"),
   };
   const Icon =
     selected.kind === "truck"
@@ -647,7 +704,7 @@ function ObjectDetails() {
         }
       >
         <ArrowLeft size={14} />
-        返回站点概览
+        {tr("返回站点概览")}
       </button>
       <div className="object-hero">
         <span className={`object-illustration ${selected.kind}`}>
@@ -657,11 +714,11 @@ function ObjectDetails() {
         <h2>{selected.id}</h2>
         <Status tone={selected.kind === "container" ? "blue" : "green"}>
           {selected.kind === "container"
-            ? "堆场就绪"
+            ? tr("堆场就绪")
             : selected.kind === "forklift"
-              ? handlingLabels[forklift.stage]
+              ? tr(handlingLabels[forklift.stage])
               : selected.kind === "pallet"
-                ? "独立货物托盘"
+                ? tr("独立货物托盘")
                 : phaseLabel(info.phase, truck.direction === "inbound")}
         </Status>
       </div>
@@ -669,36 +726,40 @@ function ObjectDetails() {
         <>
           <div className="detail-facts">
             <div>
-              <span>承运商</span>
+              <span>{tr("承运商")}</span>
               <strong>{truck.carrier}</strong>
             </div>
             <div>
-              <span>车牌号码</span>
+              <span>{tr("车牌号码")}</span>
               <strong>{truck.plate}</strong>
             </div>
             <div>
-              <span>驾驶员</span>
+              <span>{tr("驾驶员")}</span>
               <strong>{truck.driver}</strong>
             </div>
             <div>
-              <span>装卸月台</span>
+              <span>{tr("装卸月台")}</span>
               <strong>A0{truck.dock + 1}</strong>
             </div>
             <div>
-              <span>关联运单</span>
+              <span>{tr("关联运单")}</span>
               <strong className="blue-text">{truck.shipment}</strong>
             </div>
             <div>
-              <span>目的地</span>
+              <span>{tr("目的地")}</span>
               <strong>{truck.destination}</strong>
             </div>
           </div>
           <div className="load-progress">
             <div>
               <strong>
-                {truck.direction === "inbound" ? "卸货" : "装载"}进度
+                {truck.direction === "inbound" ? tr("卸货") : tr("装载")}
+                {tr("进度")}
               </strong>
-              <span>{info.completed} / 6 托盘</span>
+              <span>
+                {info.completed}
+                {tr("/ 6 托盘")}
+              </span>
             </div>
             <div className="load-segments">
               {Array.from({ length: 6 }, (_, i) => (
@@ -706,8 +767,9 @@ function ObjectDetails() {
               ))}
             </div>
             <small>
-              {SKUS[truck.sku].name} · 每托盘 {truck.units}{" "}
-              {SKUS[truck.sku].unit}
+              {skus()[truck.sku].name}
+              {tr("· 每托盘")}
+              {truck.units} {skus()[truck.sku].unit}
             </small>
           </div>
           <button
@@ -715,13 +777,13 @@ function ObjectDetails() {
             onClick={() => useStore.getState().setCamera("dock")}
           >
             <Crosshair size={16} />
-            聚焦作业区域
+            {tr("聚焦作业区域")}
           </button>
           <button
             className="secondary-button full"
             onClick={() => useStore.getState().setPage("shipments")}
           >
-            查看全部运单
+            {tr("查看全部运单")}
             <ChevronRight size={15} />
           </button>
         </>
@@ -729,11 +791,11 @@ function ObjectDetails() {
         <>
           <div className="detail-facts">
             <div>
-              <span>当前任务</span>
-              <strong>{handlingLabels[forklift.stage]}</strong>
+              <span>{tr("当前任务")}</span>
+              <strong>{tr(handlingLabels[forklift.stage])}</strong>
             </div>
             <div>
-              <span>当前货物</span>
+              <span>{tr("当前货物")}</span>
               <strong>
                 {info.phase === "loading"
                   ? palletId(truck.dock, forklift.cycle, forklift.job)
@@ -741,29 +803,30 @@ function ObjectDetails() {
               </strong>
             </div>
             <div>
-              <span>搬运方式</span>
-              <strong>后轮转向 · 低位运输</strong>
+              <span>{tr("搬运方式")}</span>
+              <strong>{tr("后轮转向 · 低位运输")}</strong>
             </div>
             <div>
-              <span>服务车辆</span>
+              <span>{tr("服务车辆")}</span>
               <strong>{truck.id}</strong>
             </div>
             <div>
-              <span>关联月台</span>
+              <span>{tr("关联月台")}</span>
               <strong>A0{truck.dock + 1}</strong>
             </div>
             <div>
-              <span>电池电量</span>
+              <span>{tr("电池电量")}</span>
               <strong>{86 - truck.dock * 13}%</strong>
             </div>
             <div>
-              <span>额定载重</span>
+              <span>{tr("额定载重")}</span>
               <strong>2,500 kg</strong>
             </div>
             <div>
-              <span>当日搬运</span>
+              <span>{tr("当日搬运")}</span>
               <strong>
-                {18 + handledPallets(time + truck.offset, truck.dock)} 托盘
+                {18 + handledPallets(time + truck.offset, truck.dock)}
+                {tr("托盘")}
               </strong>
             </div>
           </div>
@@ -772,39 +835,39 @@ function ObjectDetails() {
             onClick={() => useStore.getState().setCamera("dock")}
           >
             <Crosshair size={16} />
-            聚焦作业区域
+            {tr("聚焦作业区域")}
           </button>
         </>
       ) : selected.kind === "pallet" ? (
         <>
           <div className="detail-facts">
             <div>
-              <span>货品</span>
-              <strong>{SKUS[truck.sku].name}</strong>
+              <span>{tr("货品")}</span>
+              <strong>{skus()[truck.sku].name}</strong>
             </div>
             <div>
-              <span>运输叉车</span>
+              <span>{tr("运输叉车")}</span>
               <strong>FL-0{truck.dock + 1}</strong>
             </div>
             <div>
-              <span>关联车辆</span>
+              <span>{tr("关联车辆")}</span>
               <strong>{truck.id}</strong>
             </div>
             <div>
-              <span>托盘规格</span>
+              <span>{tr("托盘规格")}</span>
               <strong>800 × 1200 mm</strong>
             </div>
             <div>
-              <span>处理方式</span>
+              <span>{tr("处理方式")}</span>
               <strong>
                 {truck.direction === "inbound"
-                  ? "卸车后保留在收货位"
-                  : "装车后保留，随车离场"}
+                  ? tr("卸车后保留在收货位")
+                  : tr("装车后保留，随车离场")}
               </strong>
             </div>
             <div>
-              <span>载荷支承</span>
-              <strong>地面 / 货叉 / 货位接触</strong>
+              <span>{tr("载荷支承")}</span>
+              <strong>{tr("地面 / 货叉 / 货位接触")}</strong>
             </div>
           </div>
           <button
@@ -815,27 +878,31 @@ function ObjectDetails() {
                 .select({ kind: "forklift", id: `FL-0${truck.dock + 1}` })
             }
           >
-            查看搬运叉车
+            {tr("查看搬运叉车")}
           </button>
         </>
       ) : (
         <>
           <div className="detail-facts">
             <div>
-              <span>规格</span>
-              <strong>20 英尺标准箱</strong>
+              <span>{tr("规格")}</span>
+              <strong>{tr("20 英尺标准箱")}</strong>
             </div>
             <div>
-              <span>内部尺寸</span>
+              <span>{tr("内部尺寸")}</span>
               <strong>5.90 × 2.35 × 2.39 m</strong>
             </div>
             <div>
-              <span>可用容积</span>
+              <span>{tr("可用容积")}</span>
               <strong>33.1 m³</strong>
             </div>
             <div>
-              <span>存放区域</span>
-              <strong>C 区 · 0{selected.id.slice(-1)} 号位</strong>
+              <span>{tr("存放区域")}</span>
+              <strong>
+                {tr("C 区 · 0")}
+                {selected.id.slice(-1)}
+                {tr("号位")}
+              </strong>
             </div>
           </div>
           <button
@@ -846,15 +913,15 @@ function ObjectDetails() {
             }}
           >
             <Boxes size={16} />
-            {plan ? "收起装载估算" : "估算装载容量"}
+            {plan ? tr("收起装载估算") : tr("估算装载容量")}
           </button>
           {plan && (
             <div className="packing-plan">
-              <strong>标准纸箱装载估算</strong>
+              <strong>{tr("标准纸箱装载估算")}</strong>
               <label>
-                托盘数量
+                {tr("托盘数量")}
                 <input
-                  aria-label="估算托盘数量"
+                  aria-label={tr("估算托盘数量")}
                   type="number"
                   min="1"
                   max="20"
@@ -867,19 +934,20 @@ function ObjectDetails() {
                 />
               </label>
               <div>
-                <span>预计体积</span>
+                <span>{tr("预计体积")}</span>
                 <b>{(count * 1.44).toFixed(2)} m³</b>
               </div>
               <div>
-                <span>容积使用率</span>
+                <span>{tr("容积使用率")}</span>
                 <b>{(((count * 1.44) / 33.1) * 100).toFixed(1)}%</b>
               </div>
               <div className="capacity-bar">
                 <i style={{ width: `${((count * 1.44) / 33.1) * 100}%` }} />
               </div>
               <p>
-                按 1.2 × 1.0 × 1.2 m
-                标准货物估算，仅用于容量预览；实际排布需考虑尺寸与承重。
+                {tr(
+                  "按 1.2 × 1.0 × 1.2 m 标准货物估算，仅用于容量预览；实际排布需考虑尺寸与承重。",
+                )}
               </p>
             </div>
           )}
@@ -896,23 +964,25 @@ function Inspector({ onClose }: { onClose: () => void }) {
       <div className="inspector-top">
         <span>
           <span className="small-dot blue" />
-          站点控制中心
+          {tr("站点控制中心")}
         </span>
         <button
           className="inspector-close"
-          aria-label="关闭站点详情"
+          aria-label={tr("关闭站点详情")}
           onClick={onClose}
         >
           <X size={18} />
         </button>
         <IconButton
           icon={MoreHorizontal}
-          label="打开站点设置"
+          label={tr("打开站点设置")}
           onClick={() =>
             useStore
               .getState()
               .notify(
-                "园区模拟运行中 · 3 个月台 · 3 台叉车 · 数据每次搬运后同步更新",
+                tr(
+                  "园区模拟运行中 · 3 个月台 · 3 台叉车 · 数据每次搬运后同步更新",
+                ),
               )
           }
         />
@@ -927,9 +997,9 @@ function Inspector({ onClose }: { onClose: () => void }) {
       <div className="inspector-footer">
         <span>
           <ShieldCheck size={13} />
-          设备与库存状态已同步
+          {tr("设备与库存状态已同步")}
         </span>
-        <span>本地模拟</span>
+        <span>{tr("本地模拟")}</span>
       </div>
     </aside>
   );
@@ -953,9 +1023,11 @@ function InventoryPage() {
       <div className="data-title">
         <div>
           <span className="eyebrow">INVENTORY MANAGEMENT</span>
-          <h1>库存管理</h1>
+          <h1>{tr("库存管理")}</h1>
           <p>
-            滨河仓储中心 <span> / </span> 每一次流转，都清晰可见
+            {tr("滨河仓储中心")}
+            <span> / </span>
+            {tr("每一次流转，都清晰可见")}
           </p>
         </div>
         <button
@@ -963,36 +1035,36 @@ function InventoryPage() {
           onClick={() => useStore.getState().setPage("scene")}
         >
           <Map size={16} />
-          返回园区
+          {tr("返回园区")}
         </button>
       </div>
       <div className="data-stats">
         <div>
-          <span>商品种类</span>
+          <span>{tr("商品种类")}</span>
           <strong>
             {rows.length}
             <small>SKU</small>
           </strong>
         </div>
         <div>
-          <span>实物库存</span>
+          <span>{tr("实物库存")}</span>
           <strong>
             {fmt(rows.reduce((a, r) => a + r.stock, 0))}
-            <small>件 / 个 / 卷</small>
+            <small>{tr("件 / 个 / 卷")}</small>
           </strong>
         </div>
         <div>
-          <span>已预留</span>
+          <span>{tr("已预留")}</span>
           <strong>
             {fmt(rows.reduce((a, r) => a + r.reserved, 0))}
-            <small>待出库</small>
+            <small>{tr("待出库")}</small>
           </strong>
         </div>
         <div>
-          <span>库存预警</span>
+          <span>{tr("库存预警")}</span>
           <strong className="orange-text">
             {rows.filter((s) => s.low).length}
-            <small>项待关注</small>
+            <small>{tr("项待关注")}</small>
           </strong>
         </div>
       </div>
@@ -1001,8 +1073,8 @@ function InventoryPage() {
           <div className="table-search">
             <Search size={17} />
             <input
-              aria-label="搜索库存"
-              placeholder="搜索商品名称、SKU 或分类"
+              aria-label={tr("搜索库存")}
+              placeholder={tr("搜索商品名称、SKU 或分类")}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -1012,7 +1084,7 @@ function InventoryPage() {
             onClick={() => setOnlyLow(!onlyLow)}
           >
             <SlidersHorizontal size={15} />
-            {onlyLow ? "仅显示库存预警" : "全部库存"}
+            {onlyLow ? tr("仅显示库存预警") : tr("全部库存")}
             <ChevronDown size={13} />
           </button>
         </div>
@@ -1020,13 +1092,13 @@ function InventoryPage() {
           <table>
             <thead>
               <tr>
-                <th>商品 / SKU</th>
-                <th>存放库位</th>
-                <th>实物库存</th>
-                <th>已预留</th>
-                <th>可用库存</th>
-                <th>库存状态</th>
-                <th>操作</th>
+                <th>{tr("商品 / SKU")}</th>
+                <th>{tr("存放库位")}</th>
+                <th>{tr("实物库存")}</th>
+                <th>{tr("已预留")}</th>
+                <th>{tr("可用库存")}</th>
+                <th>{tr("库存状态")}</th>
+                <th>{tr("操作")}</th>
               </tr>
             </thead>
             <tbody>
@@ -1055,7 +1127,7 @@ function InventoryPage() {
                   </td>
                   <td>
                     <Status tone={r.low ? "orange" : "green"}>
-                      {r.low ? "库存偏低" : "库存充足"}
+                      {r.low ? tr("库存偏低") : tr("库存充足")}
                     </Status>
                   </td>
                   <td>
@@ -1066,7 +1138,7 @@ function InventoryPage() {
                           useStore.getState().replenish(r.id, r.pallet * 6)
                         }
                       >
-                        模拟补货
+                        {tr("模拟补货")}
                         <Plus size={13} />
                       </button>
                     ) : (
@@ -1077,7 +1149,7 @@ function InventoryPage() {
                           useStore.getState().setCamera("interior");
                         }}
                       >
-                        查看库区
+                        {tr("查看库区")}
                         <Crosshair size={13} />
                       </button>
                     )}
@@ -1089,22 +1161,29 @@ function InventoryPage() {
           {filtered.length === 0 && (
             <div className="empty-state">
               <Search size={28} />
-              <strong>没有找到匹配的商品</strong>
-              <span>试试其他名称，或切换为全部库存。</span>
+              <strong>{tr("没有找到匹配的商品")}</strong>
+              <span>{tr("试试其他名称，或切换为全部库存。")}</span>
             </div>
           )}
         </div>
         <div className="table-footer">
-          <span>共 {filtered.length} 项商品</span>
+          <span>
+            {tr("共")}
+            {filtered.length}
+            {tr("项商品")}
+          </span>
           <span>
             <span className="small-dot blue" />
-            更新于 {formatClock(time)}
+            {tr("更新于")}
+            {formatClock(time)}
           </span>
         </div>
       </div>
       <div className="data-note">
         <CircleHelp size={15} />
-        可用库存 = 实物库存 − 已预留。数据来自园区作业模拟，补货仅影响本次演示。
+        {tr(
+          "可用库存 = 实物库存 − 已预留。数据来自园区作业模拟，补货仅影响本次演示。",
+        )}
       </div>
     </div>
   );
@@ -1117,13 +1196,13 @@ function ShipmentsPage() {
       <div className="data-title">
         <div>
           <span className="eyebrow">SHIPMENT TRACKING</span>
-          <h1>运输与运单</h1>
-          <p>从入园到配送，掌握每辆车的作业进度</p>
+          <h1>{tr("运输与运单")}</h1>
+          <p>{tr("从入园到配送，掌握每辆车的作业进度")}</p>
         </div>
-        <Status tone="blue">3 笔运单跟踪中</Status>
+        <Status tone="blue">{tr("3 笔运单跟踪中")}</Status>
       </div>
       <div className="shipment-grid">
-        {TRUCKS.map((t) => {
+        {trucks().map((t) => {
           const info = phaseAt(time + t.offset, t.dock);
           return (
             <article className="shipment-card" key={t.id}>
@@ -1144,21 +1223,21 @@ function ShipmentsPage() {
                 <span className="route-origin">
                   <i />
                   <div>
-                    <small>始发站</small>
+                    <small>{tr("始发站")}</small>
                     <strong>
                       {t.direction === "inbound"
                         ? t.destination
-                        : "滨河仓储中心"}
+                        : tr("滨河仓储中心")}
                     </strong>
                   </div>
                 </span>
                 <span>
                   <i />
                   <div>
-                    <small>目的地</small>
+                    <small>{tr("目的地")}</small>
                     <strong>
                       {t.direction === "inbound"
-                        ? "滨河仓储中心"
+                        ? tr("滨河仓储中心")
                         : t.destination}
                     </strong>
                   </div>
@@ -1166,12 +1245,12 @@ function ShipmentsPage() {
               </div>
               <div className="shipment-cargo">
                 <Package size={16} />
-                <span>{SKUS[t.sku].name}</span>
-                <strong>6 托盘</strong>
+                <span>{skus()[t.sku].name}</span>
+                <strong>{tr("6 托盘")}</strong>
               </div>
               <div className="load-progress">
                 <div>
-                  <span>装卸进度</span>
+                  <span>{tr("装卸进度")}</span>
                   <strong>{info.completed} / 6</strong>
                 </div>
                 <div className="capacity-bar">
@@ -1192,7 +1271,7 @@ function ShipmentsPage() {
                 }}
               >
                 <Crosshair size={15} />
-                在场景中查看
+                {tr("在场景中查看")}
                 <ChevronRight size={15} />
               </button>
             </article>
@@ -1211,15 +1290,19 @@ function ActivityPage() {
       <div className="data-title">
         <div>
           <span className="eyebrow">OPERATIONS LOG</span>
-          <h1>作业流水</h1>
-          <p>装卸事件与库存变化保持同步</p>
+          <h1>{tr("作业流水")}</h1>
+          <p>{tr("装卸事件与库存变化保持同步")}</p>
         </div>
-        <Status>模拟事件流</Status>
+        <Status>{tr("模拟事件流")}</Status>
       </div>
       <div className="table-panel activity-panel">
         <div className="activity-table-head">
-          <strong>最近作业记录</strong>
-          <span>最近 {events.length} 条</span>
+          <strong>{tr("最近作业记录")}</strong>
+          <span>
+            {tr("最近")}
+            {events.length}
+            {tr("条")}
+          </span>
         </div>
         {events.map((event) => (
           <div className="activity-row" key={event.id}>
@@ -1233,9 +1316,12 @@ function ActivityPage() {
             <div>
               <strong>
                 {event.sku}
-                <span>{event.inbound ? "入库完成" : "装车完成"}</span>
+                <span>{event.inbound ? tr("入库完成") : tr("装车完成")}</span>
               </strong>
-              <p>{event.truck} · 一托盘作业完成，库存已同步</p>
+              <p>
+                {event.truck}
+                {tr("· 一托盘作业完成，库存已同步")}
+              </p>
             </div>
             <b className={event.inbound ? "positive" : "blue-text"}>
               {event.inbound ? "+" : "−"}
@@ -1247,7 +1333,7 @@ function ActivityPage() {
         {events.length === 0 && (
           <div className="empty-state">
             <Clock3 />
-            <strong>等待第一笔搬运完成</strong>
+            <strong>{tr("等待第一笔搬运完成")}</strong>
           </div>
         )}
       </div>
@@ -1312,7 +1398,7 @@ function Dialog({
       >
         <div className="modal-heading">
           <h2>{title}</h2>
-          <IconButton icon={X} label="关闭弹窗" onClick={onClose} />
+          <IconButton icon={X} label={tr("关闭弹窗")} onClick={onClose} />
         </div>
         {children}
       </div>
@@ -1320,7 +1406,14 @@ function Dialog({
   );
 }
 
-export default function App() {
+export default function App({ locale }: { locale: Locale }) {
+  useEffect(() => {
+    useStore.getState().setPage("scene");
+  }, []);
+  useEffect(() => {
+    // Transient notifications were formatted in the previous language.
+    useStore.getState().notify(null);
+  }, [locale]);
   useStore((s) => s.deliveries); // Render ledger changes even while the simulation is paused.
   const page = useStore((s) => s.page),
     simulationReady = useStore((s) => s.simulationReady),
@@ -1364,8 +1457,12 @@ export default function App() {
       }
       if (
         e.code === "Space" &&
-        !(e.target instanceof HTMLInputElement) &&
-        !(e.target instanceof HTMLButtonElement)
+        !(
+          e.target instanceof HTMLElement &&
+          e.target.closest(
+            "input, textarea, select, button, a, [contenteditable=true]",
+          )
+        )
       ) {
         e.preventDefault();
         useStore.getState().togglePause();
@@ -1375,10 +1472,10 @@ export default function App() {
     return () => window.removeEventListener("keydown", key);
   }, []);
   const nav: { page: Page; name: string; icon: LucideIcon }[] = [
-    { page: "scene", name: "园区总览", icon: LayoutDashboard },
-    { page: "inventory", name: "库存管理", icon: Boxes },
-    { page: "shipments", name: "运输运单", icon: Truck },
-    { page: "activity", name: "作业流水", icon: Activity },
+    { page: "scene", name: tr("园区总览"), icon: LayoutDashboard },
+    { page: "inventory", name: tr("库存管理"), icon: Boxes },
+    { page: "shipments", name: tr("运输运单"), icon: Truck },
+    { page: "activity", name: tr("作业流水"), icon: Activity },
   ];
   const allResults: {
     label: string;
@@ -1388,13 +1485,13 @@ export default function App() {
     page: Page;
   }[] = [
     {
-      label: "滨河仓储中心",
-      sub: "WH-01 · 仓储站点",
+      label: tr("滨河仓储中心"),
+      sub: tr("WH-01 · 仓储站点"),
       icon: Warehouse,
       selection: { kind: "site", id: "WH-01" },
       page: "scene",
     },
-    ...TRUCKS.map((t) => ({
+    ...trucks().map((t) => ({
       label: t.id,
       sub: `${t.shipment} · ${t.carrier}`,
       icon: Truck,
@@ -1403,19 +1500,19 @@ export default function App() {
     })),
     ...[1, 2, 3].map((i) => ({
       label: `FL-0${i}`,
-      sub: `作业叉车 · A0${i} 月台`,
+      sub: tr("作业叉车 · A0{0} 月台", { 0: i }),
       icon: Forklift,
       selection: { kind: "forklift" as const, id: `FL-0${i}` },
       page: "scene" as const,
     })),
     ...[1, 2, 3].map((i) => ({
       label: `CNT-00${i}`,
-      sub: "标准集装箱 · C 区",
+      sub: tr("标准集装箱 · C 区"),
       icon: Container,
       selection: { kind: "container" as const, id: `CNT-00${i}` },
       page: "scene" as const,
     })),
-    ...SKUS.map((s) => ({
+    ...skus().map((s) => ({
       label: s.name,
       sub: `${s.id} · ${s.location}`,
       icon: Package,
@@ -1431,29 +1528,29 @@ export default function App() {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <button
+        <a
           className="brand"
-          aria-label="Plantbox 首页"
-          onClick={() => useStore.getState().setPage("scene")}
+          aria-label={tr("Plantbox 首页")}
+          href={routeHref(locale)}
         >
           <img src="/favicon.svg" alt="" />
           <div>
             <strong>
               plantbox<span>®</span>
             </strong>
-            <small>仓 储 作 业 平 台</small>
+            <small>{tr("仓 储 作 业 平 台")}</small>
           </div>
-        </button>
-        <div className="workspace-breadcrumb">
-          <span>工作空间</span>
-          <ChevronRight size={13} />
-          <strong>滨河仓储中心</strong>
-          <span className="warehouse-code">WH-01</span>
-        </div>
+        </a>
+        <ProjectMenu
+          locale={locale}
+          demo
+          onDemoClick={() => useStore.getState().setPage("scene")}
+        />
         <div className="header-actions">
+          <LanguageSwitch locale={locale} page="demo" />
           <button className="global-search" onClick={() => setSearchOpen(true)}>
             <Search size={17} />
-            <span>搜索车辆、货物、运单...</span>
+            <span>{tr("搜索车辆、货物、运单...")}</span>
             <kbd>
               <Command size={11} /> K
             </kbd>
@@ -1461,17 +1558,21 @@ export default function App() {
           <button
             className={`simulation-pill ${paused ? "paused" : ""}`}
             onClick={() => useStore.getState().togglePause()}
-            title="点击暂停或继续模拟"
+            title={tr("点击暂停或继续模拟")}
           >
             <span className="live-pulse" />
-            {paused ? "已暂停" : simulationReady ? "模拟运行" : "准备作业"}
+            {paused
+              ? tr("已暂停")
+              : simulationReady
+                ? tr("模拟运行")
+                : tr("准备作业")}
             <span>{formatClock(time).slice(0, 5)}</span>
           </button>
           <span className="header-divider" />
           <div className="notification-wrap">
             <IconButton
               icon={Bell}
-              label="查看通知"
+              label={tr("查看通知")}
               active={notifications}
               onClick={() => setNotifications(!notifications)}
             />
@@ -1479,7 +1580,11 @@ export default function App() {
             {notifications && (
               <div className="notification-menu">
                 <strong>
-                  通知中心<span>{lowItems.length} 条待关注</span>
+                  {tr("通知中心")}
+                  <span>
+                    {lowItems.length}
+                    {tr("条待关注")}
+                  </span>
                 </strong>
                 {lowItems.length ? (
                   <button
@@ -1490,21 +1595,24 @@ export default function App() {
                   >
                     <span className="alert-symbol">!</span>
                     <div>
-                      <b>{lowItems.map((s) => s.name).join("、")}库存偏低</b>
-                      <small>查看可用库存并安排补货</small>
+                      <b>
+                        {lowItems.map((s) => s.name).join(localeSeparator())}
+                        {tr("库存偏低")}
+                      </b>
+                      <small>{tr("查看可用库存并安排补货")}</small>
                     </div>
                     <ChevronRight size={15} />
                   </button>
                 ) : (
-                  <p className="notification-empty">当前没有库存预警</p>
+                  <p className="notification-empty">{tr("当前没有库存预警")}</p>
                 )}
-                <small>数据来自当前模拟场景</small>
+                <small>{tr("数据来自当前模拟场景")}</small>
               </div>
             )}
           </div>
           <button
             className="profile"
-            title="查看演示设置"
+            title={tr("查看演示设置")}
             onClick={() => setSettings(true)}
           >
             TC
@@ -1512,7 +1620,7 @@ export default function App() {
         </div>
       </header>
       <div className="workspace">
-        <nav className="sidebar" aria-label="主导航">
+        <nav className="sidebar" aria-label={tr("主导航")}>
           <div className="nav-main">
             {nav.map(({ page: p, name, icon: Icon }) => (
               <button
@@ -1524,19 +1632,28 @@ export default function App() {
                 onClick={() => useStore.getState().setPage(p)}
               >
                 <Icon size={21} strokeWidth={1.65} />
-                <span>{name.slice(0, 2)}</span>
+                <span>
+                  {currentLocale() === "zh"
+                    ? name.slice(0, 2)
+                    : {
+                        scene: "Site",
+                        inventory: "Stock",
+                        shipments: "Trucks",
+                        activity: "Log",
+                      }[p]}
+                </span>
               </button>
             ))}
           </div>
           <div className="nav-bottom">
             <IconButton
               icon={CircleHelp}
-              label="操作帮助"
+              label={tr("操作帮助")}
               onClick={() => setHelp(true)}
             />
             <IconButton
               icon={Settings2}
-              label="演示设置"
+              label={tr("演示设置")}
               onClick={() => setSettings(true)}
             />
             <div className="nav-avatar">P</div>
@@ -1554,11 +1671,11 @@ export default function App() {
                   fallback={
                     <div className="scene-loading">
                       <Box size={36} />
-                      <strong>正在准备园区场景</strong>
+                      <strong>{tr("正在准备园区场景")}</strong>
                     </div>
                   }
                 >
-                  <Scene />
+                  <Scene locale={locale} />
                 </Suspense>
               </SceneBoundary>
               <div className="view-heading">
@@ -1568,15 +1685,16 @@ export default function App() {
                     RIVERSIDE LOGISTICS PARK
                   </div>
                   <h1>
-                    园区总览 <span>01</span>
+                    {tr("园区总览")}
+                    <span>01</span>
                   </h1>
                 </div>
                 <div className="scene-status">
                   <span className="small-dot green" />
-                  所有系统运行正常
+                  {tr("所有系统运行正常")}
                   <IconButton
                     icon={Expand}
-                    label="全屏显示"
+                    label={tr("全屏显示")}
                     onClick={() => {
                       if (!document.fullscreenElement)
                         document.documentElement
@@ -1585,7 +1703,9 @@ export default function App() {
                             useStore
                               .getState()
                               .notify(
-                                "当前浏览器不支持全屏，可使用浏览器的全屏模式",
+                                tr(
+                                  "当前浏览器不支持全屏，可使用浏览器的全屏模式",
+                                ),
                               ),
                           );
                       else document.exitFullscreen?.();
@@ -1598,7 +1718,11 @@ export default function App() {
               <div className="scene-footer-info">
                 <span>
                   <MousePointer2 size={13} />
-                  拖动旋转<span>·</span>滚轮缩放<span>·</span>点击查看详情
+                  {tr("拖动旋转")}
+                  <span>·</span>
+                  {tr("滚轮缩放")}
+                  <span>·</span>
+                  {tr("点击查看详情")}
                 </span>
                 <span className="scene-coordinates">31°08′ N · 121°22′ E</span>
               </div>
@@ -1609,8 +1733,13 @@ export default function App() {
                     <span className="event-dot" />
                     <span>
                       {latest
-                        ? `${latest.truck} ${latest.inbound ? "完成入库" : "完成装车"} · ${latest.sku} ${latest.amount} 件`
-                        : "所有设备已就绪，等待作业任务"}
+                        ? tr("{0} {1} · {2} {3} 件", {
+                            0: latest.truck,
+                            1: latest.inbound ? tr("完成入库") : tr("完成装车"),
+                            2: latest.sku,
+                            3: latest.amount,
+                          })
+                        : tr("所有设备已就绪，等待作业任务")}
                     </span>
                     <time>
                       {latest ? formatClock(latest.time) : formatClock(time)}
@@ -1619,7 +1748,7 @@ export default function App() {
                   <div className="playback">
                     <button
                       onClick={() => useStore.getState().togglePause()}
-                      aria-label={paused ? "继续模拟" : "暂停模拟"}
+                      aria-label={paused ? tr("继续模拟") : tr("暂停模拟")}
                     >
                       {paused ? (
                         <Play size={13} fill="currentColor" />
@@ -1627,11 +1756,11 @@ export default function App() {
                         <Pause size={13} fill="currentColor" />
                       )}
                     </button>
-                    <span>模拟</span>
+                    <span>{tr("模拟")}</span>
                     {[1, 5, 10].map((v) => (
                       <button
                         key={v}
-                        aria-label={`${v} 倍速`}
+                        aria-label={tr("{0} 倍速", { 0: v })}
                         className={speed === v ? "active" : ""}
                         onClick={() => useStore.getState().setSpeed(v)}
                       >
@@ -1647,7 +1776,7 @@ export default function App() {
                 onClick={() => setMobileDetails(!mobileDetails)}
               >
                 <Building2 size={17} />
-                {mobileDetails ? "收起站点信息" : "站点信息"}
+                {mobileDetails ? tr("收起站点信息") : tr("站点信息")}
                 <ChevronRight size={14} />
               </button>
             </section>
@@ -1667,7 +1796,7 @@ export default function App() {
           <CheckCheck size={18} />
           {notice}
           <button
-            aria-label="关闭提示"
+            aria-label={tr("关闭提示")}
             onClick={() => useStore.getState().notify(null)}
           >
             <X size={15} />
@@ -1675,13 +1804,13 @@ export default function App() {
         </div>
       )}
       {searchOpen && (
-        <Dialog title="搜索工作空间" onClose={() => setSearchOpen(false)}>
+        <Dialog title={tr("搜索工作空间")} onClose={() => setSearchOpen(false)}>
           <div className="modal-search">
             <Search size={20} />
             <input
               autoFocus
-              placeholder="输入车辆、运单、商品或设备编号"
-              aria-label="搜索工作空间"
+              placeholder={tr("输入车辆、运单、商品或设备编号")}
+              aria-label={tr("搜索工作空间")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -1718,22 +1847,22 @@ export default function App() {
             {searchResults.length === 0 && (
               <div className="empty-state">
                 <Search />
-                <strong>没有找到匹配的结果</strong>
+                <strong>{tr("没有找到匹配的结果")}</strong>
               </div>
             )}
           </div>
         </Dialog>
       )}
       {settings && (
-        <Dialog title="演示设置" onClose={() => setSettings(false)}>
+        <Dialog title={tr("演示设置")} onClose={() => setSettings(false)}>
           <div className="settings-body">
             <div className="setting-row">
               <div>
-                <strong>画面质量</strong>
-                <p>精细光影适合桌面设备，流畅模式减少渲染负担。</p>
+                <strong>{tr("画面质量")}</strong>
+                <p>{tr("精细光影适合桌面设备，流畅模式减少渲染负担。")}</p>
               </div>
               <select
-                aria-label="画面质量"
+                aria-label={tr("画面质量")}
                 value={quality}
                 onChange={(e) =>
                   useStore
@@ -1741,14 +1870,14 @@ export default function App() {
                     .setQuality(e.target.value as "high" | "balanced")
                 }
               >
-                <option value="high">精细光影</option>
-                <option value="balanced">流畅优先</option>
+                <option value="high">{tr("精细光影")}</option>
+                <option value="balanced">{tr("流畅优先")}</option>
               </select>
             </div>
             <div className="setting-row">
               <div>
-                <strong>重置模拟</strong>
-                <p>恢复初始时间、库存和作业进度。</p>
+                <strong>{tr("重置模拟")}</strong>
+                <p>{tr("恢复初始时间、库存和作业进度。")}</p>
               </div>
               <button
                 className="secondary-button"
@@ -1758,60 +1887,72 @@ export default function App() {
                 }}
               >
                 <RotateCcw size={14} />
-                重置
+                {tr("重置")}
               </button>
             </div>
             <div className="settings-note">
               <ShieldCheck size={20} />
               <p>
-                当前为 30 分钟交互式作业模拟，可重置后重复运行。未连接 WMS、ERP
-                或现场设备，库存补货与运行状态仅在当前页面生效。
+                {tr(
+                  "当前为 30 分钟交互式作业模拟，可重置后重复运行。未连接 WMS、ERP 或现场设备，库存补货与运行状态仅在当前页面生效。",
+                )}
               </p>
             </div>
           </div>
         </Dialog>
       )}
       {help && (
-        <Dialog title="探索你的仓储园区" onClose={() => setHelp(false)}>
+        <Dialog title={tr("探索你的仓储园区")} onClose={() => setHelp(false)}>
           <div className="help-body">
             <div>
               <MousePointer2 />
               <span>
-                <strong>自由探索</strong>
+                <strong>{tr("自由探索")}</strong>
                 <p>
-                  鼠标左键拖动旋转，右键拖动平移，滚轮缩放；触屏支持单指旋转、双指缩放。
+                  {tr(
+                    "鼠标左键拖动旋转，右键拖动平移，滚轮缩放；触屏支持单指旋转、双指缩放。",
+                  )}
                 </p>
               </span>
             </div>
             <div>
               <Crosshair />
               <span>
-                <strong>查看作业详情</strong>
-                <p>点击车辆、叉车或货柜查看详情，也可以通过月台列表定位。</p>
+                <strong>{tr("查看作业详情")}</strong>
+                <p>
+                  {tr("点击车辆、叉车或货柜查看详情，也可以通过月台列表定位。")}
+                </p>
               </span>
             </div>
             <div>
               <Layers3 />
               <span>
-                <strong>走进仓库</strong>
-                <p>点击“查看仓内”打开屋顶，或切换仓内视角查看货架和货物。</p>
+                <strong>{tr("走进仓库")}</strong>
+                <p>
+                  {tr("点击“查看仓内”打开屋顶，或切换仓内视角查看货架和货物。")}
+                </p>
               </span>
             </div>
             <div>
               <Zap />
               <span>
-                <strong>控制模拟节奏</strong>
+                <strong>{tr("控制模拟节奏")}</strong>
                 <p>
-                  空格键暂停或继续，通过 1× / 5× / 10×
-                  调整速度。每完成一次搬运，库存和运单自动更新。
+                  {tr(
+                    "空格键暂停或继续，通过 1× / 5× / 10× 调整速度。每完成一次搬运，库存和运单自动更新。",
+                  )}
                 </p>
               </span>
             </div>
             <div>
               <Search />
               <span>
-                <strong>快速查找</strong>
-                <p>使用 ⌘K / Ctrl+K 搜索车辆、运单、叉车、集装箱和库存商品。</p>
+                <strong>{tr("快速查找")}</strong>
+                <p>
+                  {tr(
+                    "使用 ⌘K / Ctrl+K 搜索车辆、运单、叉车、集装箱和库存商品。",
+                  )}
+                </p>
               </span>
             </div>
           </div>

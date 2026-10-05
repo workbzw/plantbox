@@ -1,3 +1,4 @@
+import { tr } from "./i18n.ts";
 import { create } from "zustand";
 import type { Selection } from "./simulation.ts";
 import { DEMO_END, SKUS } from "./simulation.ts";
@@ -61,14 +62,14 @@ export const useStore = create<AppState>((set) => ({
         ? {
             time,
             paused: true,
-            notice: "30 分钟作业场景已演示完成，可在设置中重置后再次运行。",
+            notice: tr("30 分钟作业场景已演示完成，可在设置中重置后再次运行。"),
           }
         : { time };
     }),
   togglePause: () =>
     set((s) =>
       s.time >= DEMO_END
-        ? { notice: "演示已完成，请在设置中重置模拟。" }
+        ? { notice: tr("演示已完成，请在设置中重置模拟。") }
         : { paused: !s.paused },
     ),
   setSpeed: (speed) => set({ speed }),
@@ -107,7 +108,11 @@ export const useStore = create<AppState>((set) => ({
           ...s.adjustments,
           [sku]: (s.adjustments[sku] ?? 0) + amount,
         },
-        notice: `已补充 ${item.name} ${amount} ${item.unit}，库存看板已更新`,
+        notice: tr("已补充 {0} {1} {2}，库存看板已更新", {
+          0: tr(item.name),
+          1: amount,
+          2: tr(item.unit),
+        }),
       };
     }),
   notify: (notice) => set({ notice }),
@@ -121,6 +126,6 @@ export const useStore = create<AppState>((set) => ({
       selected: { kind: "site", id: "WH-01" },
       camera: { view: "overview", seq: s.camera.seq + 1, zoom: 1, rotation: 0 },
       roofOpen: false,
-      notice: "模拟已恢复初始状态",
+      notice: tr("模拟已恢复初始状态"),
     })),
 }));

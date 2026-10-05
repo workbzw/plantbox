@@ -1,3 +1,4 @@
+import { tr } from "./i18n";
 import { useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
@@ -352,7 +353,7 @@ export function Warehouse({
         <primitive object={roof} />
       </group>
       <Sign
-        text="PLANTBOX  /  滨河仓储中心"
+        text={tr("PLANTBOX  /  滨河仓储中心")}
         position={[-8, 6.1, 2.38]}
         width={12}
         height={1.1}
@@ -505,7 +506,7 @@ export function EnvironmentModel() {
         background="#7e8e9e"
       />
       <Sign
-        text="仓 储 作 业 区"
+        text={tr("仓 储 作 业 区")}
         position={[-9, 0.08, 34.5]}
         width={9}
         height={0.8}
@@ -514,7 +515,7 @@ export function EnvironmentModel() {
         color="#788b98"
       />
       <Sign
-        text="←  IN / 入口"
+        text={tr("←  IN / 入口")}
         position={[28, 0.08, 26.65]}
         width={3.2}
         height={0.85}
@@ -523,7 +524,7 @@ export function EnvironmentModel() {
         color="#547785"
       />
       <Sign
-        text="OUT / 出口  →"
+        text={tr("OUT / 出口  →")}
         position={[28, 0.08, 31.15]}
         width={5}
         height={0.85}

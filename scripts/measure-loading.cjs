@@ -1,7 +1,7 @@
 // Run against a production preview. Install Playwright or set PLAYWRIGHT_MODULE.
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
 const fs = require("node:fs");
-const url = process.argv[2] || "http://localhost:4173/";
+const url = process.argv[2] || "http://localhost:4173/#/zh/demo";
 const output = process.argv[3] || "/tmp/plantbox-loading.json";
 const runs = Number(process.env.PERF_RUNS || 3);
 
