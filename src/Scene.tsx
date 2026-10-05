@@ -154,7 +154,7 @@ function CameraRig() {
   const animating = useRef(true);
   useEffect(() => {
     const views = {
-      overview: { target: [-2, 0, 4], pos: [62, 56, 81], factor: 0.9 },
+      overview: { target: [-8, 1, 8], pos: [56, 57, 85], factor: 2 },
       dock: { target: [-8, 1, 15], pos: [29, 37, 65], factor: 1.4 },
       storage: { target: [26, 1, -8], pos: [55, 33, 40], factor: 2 },
       top: { target: [-1, 0, 6], pos: [-1, 100, 6.01], factor: 0.88 },
