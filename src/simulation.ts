@@ -1,3 +1,7 @@
+import { SKUS } from "./config/catalog.ts";
+import { DEMO_TRUCKS as TRUCKS } from "./config/demo.ts";
+import { completedJobs, deliveryTime } from "./forkliftMotion.ts";
+import type { DeliveryRecord } from "./logistics.ts";
 import {
   CYCLE,
   DEPART_END,
@@ -5,8 +9,8 @@ import {
   LOAD_START,
   STOCK_LAYERS,
 } from "./logistics.ts";
-import type { DeliveryRecord } from "./logistics.ts";
-import { completedJobs, deliveryTime } from "./forkliftMotion.ts";
+export { SKUS } from "./config/catalog.ts";
+export { DEMO_TRUCKS as TRUCKS } from "./config/demo.ts";
 export { CYCLE } from "./logistics.ts";
 export const DEMO_END = 1800;
 export type Phase =
@@ -19,118 +23,6 @@ export type Selection = {
   kind: "site" | "truck" | "forklift" | "container" | "pallet";
   id: string;
 };
-export const TRUCKS = [
-  {
-    id: "TRK-2051",
-    plate: "沪 B·7K218",
-    carrier: "昆仑元物流",
-    driver: "张师傅",
-    destination: "昆仑元苏州配送中心",
-    shipment: "SHP-78442",
-    dock: 0,
-    offset: 0,
-    color: "#2855ce",
-    direction: "outbound" as const,
-    sku: 0,
-    units: 24,
-  },
-  {
-    id: "TRK-2287",
-    plate: "沪 D·6J092",
-    carrier: "昆仑元供应链",
-    driver: "李师傅",
-    destination: "昆仑元杭州配送中心",
-    shipment: "SHP-78447",
-    dock: 1,
-    offset: 72,
-    color: "#e58440",
-    direction: "inbound" as const,
-    sku: 1,
-    units: 12,
-  },
-  {
-    id: "TRK-2136",
-    plate: "苏 E·3N165",
-    carrier: "昆仑元冷链",
-    driver: "陈师傅",
-    destination: "昆仑元南京配送中心",
-    shipment: "SHP-78451",
-    dock: 2,
-    offset: 161,
-    color: "#489792",
-    direction: "outbound" as const,
-    sku: 2,
-    units: 18,
-  },
-];
-export const SKUS = [
-  {
-    id: "PKG-001",
-    name: "标准包装纸箱",
-    category: "包装耗材",
-    stock: 1920,
-    min: 500,
-    color: "#bd8d55",
-    location: "A-01",
-    unit: "件",
-    pallet: 24,
-  },
-  {
-    id: "STO-020",
-    name: "蓝色周转箱",
-    category: "周转容器",
-    stock: 348,
-    min: 100,
-    color: "#4b73d5",
-    location: "A-02",
-    unit: "个",
-    pallet: 12,
-  },
-  {
-    id: "PKG-048",
-    name: "工业包装胶带",
-    category: "包装耗材",
-    stock: 2680,
-    min: 600,
-    color: "#d5b47a",
-    location: "B-01",
-    unit: "卷",
-    pallet: 18,
-  },
-  {
-    id: "PPE-010",
-    name: "作业安全帽",
-    category: "劳保用品",
-    stock: 128,
-    min: 150,
-    color: "#e8b345",
-    location: "B-02",
-    unit: "顶",
-    pallet: 16,
-  },
-  {
-    id: "STO-012",
-    name: "木质标准托盘",
-    category: "周转容器",
-    stock: 216,
-    min: 80,
-    color: "#ac8358",
-    location: "C-01",
-    unit: "个",
-    pallet: 10,
-  },
-  {
-    id: "PPE-036",
-    name: "防护手套",
-    category: "劳保用品",
-    stock: 864,
-    min: 200,
-    color: "#799791",
-    location: "C-02",
-    unit: "双",
-    pallet: 24,
-  },
-];
 export function phaseAt(
   time: number,
   dock = 0,

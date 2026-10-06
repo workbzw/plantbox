@@ -1,4 +1,5 @@
-export const DOCK_X = [-19, -8, 3] as const;
+import { SITE } from "./config/site.ts";
+export const DOCK_X = SITE.docks.map((dock) => dock.x);
 export const TRUCK_OFFSETS = [0, 72, 161] as const;
 export const LOAD_START = 50;
 export const JOB_SECONDS = 120;

@@ -1,13 +1,33 @@
-import { tr } from "./i18n";
-import type { Locale } from "./routing";
-import { Suspense, memo, useEffect, useMemo, useRef, useState } from "react";
+import { OrbitControls } from "@react-three/drei/core/OrbitControls.js";
+import { Html } from "@react-three/drei/web/Html.js";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import type { ComponentType } from "react";
-import { Html } from "@react-three/drei/web/Html.js";
-import { OrbitControls } from "@react-three/drei/core/OrbitControls.js";
-import { afterPaint } from "./startup";
-import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
+import {
+  lazy,
+  memo,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import * as THREE from "three";
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
+import { SITE } from "./config/site";
+import type { SourceMode } from "./domain/warehouse";
+import { tr } from "./i18n";
+import {
+  ContainerModel,
+  EnvironmentModel,
+  TruckModel,
+  Warehouse,
+} from "./Models";
+import type { Locale } from "./routing";
+import { phaseAt, TRUCKS } from "./simulation";
+import { afterPaint } from "./startup";
+import { useSimulationStore } from "./state/simulationStore";
+import { useUIStore as useStore } from "./state/uiStore";
+import { frontWheelAngle, TRUCK_GEOMETRY, truckPose } from "./truckMotion";
 
 function Label(props: React.ComponentProps<typeof Html>) {
   const gl = useThree((s) => s.gl);
@@ -17,15 +37,6 @@ function Label(props: React.ComponentProps<typeof Html>) {
   );
   return <Html {...props} portal={portal} />;
 }
-import {
-  ContainerModel,
-  EnvironmentModel,
-  TruckModel,
-  Warehouse,
-} from "./Models";
-import { useStore } from "./store";
-import { phaseAt, TRUCKS } from "./simulation";
-import { frontWheelAngle, TRUCK_GEOMETRY, truckPose } from "./truckMotion";
 
 import { HandlingScene } from "./HandlingScene";
 import { DOCK_X } from "./logistics";
@@ -72,7 +83,7 @@ function MovingTruck({
   const ref = useRef<THREE.Group>(null);
   const wheelRig = useRef<THREE.Group>(null);
   const labels = useStore((s) => s.labels);
-  const phase = useStore((s) => phaseAt(s.time + data.offset).phase);
+  const phase = useSimulationStore((s) => phaseAt(s.time + data.offset).phase);
   const selected = useStore(
     (s) => s.selected.kind === "truck" && s.selected.id === data.id,
   );
@@ -139,17 +150,18 @@ function MovingTruck({
   );
 }
 
-function CameraRig() {
+function CameraRig({ focusDock: suppliedDock }: { focusDock?: number }) {
   const controls = useRef<OrbitControlsImpl>(null);
   const { camera, size } = useThree();
   const command = useStore((s) => s.camera);
-  const focusDock = useStore((s) =>
+  const selectedDock = useStore((s) =>
     s.selected.kind === "forklift"
       ? Number(s.selected.id.slice(-1)) - 1
       : s.selected.kind === "pallet"
         ? Number(s.selected.id.split("-")[1]) - 1
         : -1,
   );
+  const focusDock = suppliedDock ?? selectedDock;
   const target = useRef(new THREE.Vector3(-2, 0, 0));
   const position = useRef(new THREE.Vector3(58, 48, 72));
   const zoom = useRef(10);
@@ -208,7 +220,18 @@ function CameraRig() {
   );
 }
 
-function World({ onReady }: { locale: Locale; onReady: () => void }) {
+const LiveAssets = lazy(() => import("./features/scene/LiveAssets"));
+
+function World({
+  onReady,
+  mode,
+  focusDock,
+}: {
+  locale: Locale;
+  onReady: () => void;
+  mode: SourceMode;
+  focusDock?: number;
+}) {
   const [Effects, setEffects] = useState<ComponentType<{
     quality: "high" | "balanced";
   }> | null>(null);
@@ -237,7 +260,7 @@ function World({ onReady }: { locale: Locale; onReady: () => void }) {
       performance.mark("plantbox:scene-ready");
     });
   });
-  const physicalClock = useRef(useStore.getState().time);
+  const physicalClock = useRef(useSimulationStore.getState().time);
   const roofOpen = useStore((s) => s.roofOpen);
   const labels = useStore((s) => s.labels);
   const quality = useStore((s) => s.quality);
@@ -287,7 +310,7 @@ function World({ onReady }: { locale: Locale; onReady: () => void }) {
         roofOpen={roofOpen}
         onClick={(e) => {
           e.stopPropagation();
-          select({ kind: "site", id: "WH-01" });
+          select({ kind: "site", id: SITE.id });
         }}
       />
       <Label
@@ -298,19 +321,29 @@ function World({ onReady }: { locale: Locale; onReady: () => void }) {
       >
         <button
           className="scene-tag warehouse-tag"
-          onClick={() => select({ kind: "site", id: "WH-01" })}
+          onClick={() => select({ kind: "site", id: SITE.id })}
         >
           <span className="tag-cube">▣</span>
           <div>
-            <b>{tr("昆仑元仓储中心")}</b>
-            <small>{tr("WH-01 · 运行正常")}</small>
+            <b>{tr(SITE.name)}</b>
+            <small>
+              {mode === "live"
+                ? `${SITE.id} · ${tr("业务状态")}`
+                : tr("WH-01 · 运行正常")}
+            </small>
           </div>
         </button>
       </Label>
-      {TRUCKS.map((t, i) => (
-        <MovingTruck key={t.id} index={i} clock={physicalClock} />
-      ))}
-      <HandlingScene clock={physicalClock} />
+      {mode === "demo" ? (
+        <>
+          {TRUCKS.map((t, i) => (
+            <MovingTruck key={t.id} index={i} clock={physicalClock} />
+          ))}
+          <HandlingScene clock={physicalClock} />
+        </>
+      ) : (
+        <LiveAssets />
+      )}
       {[0, 1, 2].map((i) => (
         <group
           key={i}
@@ -343,7 +376,7 @@ function World({ onReady }: { locale: Locale; onReady: () => void }) {
           <b>03</b>
         </button>
       </Label>
-      <CameraRig />
+      <CameraRig focusDock={focusDock} />
       {Effects && (
         <Suspense fallback={null}>
           <Effects quality={quality} />
@@ -353,14 +386,24 @@ function World({ onReady }: { locale: Locale; onReady: () => void }) {
   );
 }
 
-function Scene({ locale }: { locale: Locale }) {
+function Scene({
+  locale,
+  mode = "demo",
+  active = true,
+  focusDock,
+}: {
+  locale: Locale;
+  mode?: SourceMode;
+  active?: boolean;
+  focusDock?: number;
+}) {
   const page = useStore((s) => s.page);
   const quality = useStore((s) => s.quality);
   const [ready, setReady] = useState(false);
   return (
     <div className="scene-canvas" aria-label={tr("可交互的三维仓储园区")}>
       <Canvas
-        frameloop={page === "scene" ? "always" : "never"}
+        frameloop={page === "scene" && active ? "always" : "never"}
         orthographic
         shadows
         dpr={quality === "high" ? [1, 1.6] : [1, 1.15]}
@@ -375,11 +418,16 @@ function Scene({ locale }: { locale: Locale }) {
           gl.shadowMap.type = THREE.PCFSoftShadowMap;
         }}
         onPointerMissed={() =>
-          useStore.getState().select({ kind: "site", id: "WH-01" })
+          useStore.getState().select({ kind: "site", id: SITE.id })
         }
       >
         <Suspense fallback={null}>
-          <World locale={locale} onReady={() => setReady(true)} />
+          <World
+            locale={locale}
+            mode={mode}
+            focusDock={focusDock}
+            onReady={() => setReady(true)}
+          />
         </Suspense>
       </Canvas>
       {!ready && (

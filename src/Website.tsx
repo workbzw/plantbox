@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   Component,
   lazy,
@@ -5,11 +6,11 @@ import {
   useEffect,
   useSyncExternalStore,
 } from "react";
-import type { ReactNode } from "react";
-import { parseRoute, routeHref } from "./routing";
 import { Landing } from "./Landing";
+import { parseRoute, routeHref } from "./routing";
 import "./website.css";
 
+const OperationsApp = lazy(() => import("./features/operations/OperationsApp"));
 const WarehouseApp = lazy(() => import("./App"));
 const subscribe = (onChange: () => void) => {
   window.addEventListener("hashchange", onChange);
@@ -58,8 +59,8 @@ export default function Website() {
     document.documentElement.lang = locale === "zh" ? "zh-CN" : "en";
     document.title =
       locale === "zh"
-        ? `Plantbox · ${page === "demo" ? "仓储作业演示" : "让仓储作业，看得见"}`
-        : `Plantbox · ${page === "demo" ? "Warehouse demo" : "Warehouse operations, made visible"}`;
+        ? `Plantbox · ${page === "operations" ? "仓储作业管理" : page === "demo" ? "仓储作业演示" : "让仓储作业，看得见"}`
+        : `Plantbox · ${page === "operations" ? "Warehouse operations" : page === "demo" ? "Warehouse demo" : "Warehouse operations, made visible"}`;
     document
       .querySelector('meta[name="description"]')
       ?.setAttribute(
@@ -76,7 +77,7 @@ export default function Website() {
   return page === "home" ? (
     <Landing locale={locale} />
   ) : (
-    <DemoBoundary english={locale === "en"}>
+    <DemoBoundary key={page} english={locale === "en"}>
       <Suspense
         fallback={
           <div className="website-loading" role="status">
@@ -92,7 +93,11 @@ export default function Website() {
           </div>
         }
       >
-        <WarehouseApp locale={locale} />
+        {page === "operations" ? (
+          <OperationsApp locale={locale} />
+        ) : (
+          <WarehouseApp locale={locale} />
+        )}
       </Suspense>
     </DemoBoundary>
   );

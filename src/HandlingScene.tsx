@@ -1,15 +1,16 @@
-import { tr } from "./i18n";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { useFrame, useThree } from "@react-three/fiber";
 import { Html } from "@react-three/drei/web/Html.js";
+import { useFrame, useThree } from "@react-three/fiber";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { CargoPallet, ForkliftModel } from "./Models";
-import type { HandlingPhysics } from "./handlingPhysics";
 import { materialSnapshot } from "./cargoSnapshot";
-import { afterPaint } from "./startup";
 import { forkliftPose, handlingLabels } from "./forkliftMotion";
+import type { HandlingPhysics } from "./handlingPhysics";
+import { tr } from "./i18n";
 import { FLOOR_Y, FORKLIFT, TRUCK_OFFSETS } from "./logistics";
-import { useStore } from "./store";
+import { afterPaint } from "./startup";
+import { useSimulationStore } from "./state/simulationStore";
+import { useUIStore as useStore } from "./state/uiStore";
 
 function Forklift({
   dock,
@@ -26,7 +27,7 @@ function Forklift({
     (s) =>
       s.selected.kind === "forklift" && s.selected.id === `FL-0${dock + 1}`,
   );
-  const stage = useStore(
+  const stage = useSimulationStore(
     (s) => forkliftPose(s.time + TRUCK_OFFSETS[dock], dock).stage,
   );
   const gl = useThree((s) => s.gl);
@@ -99,7 +100,7 @@ export function HandlingScene({ clock }: { clock: React.RefObject<number> }) {
   const [engine, setEngine] = useState<HandlingPhysics | null>(null);
   const [, setRevision] = useState(0);
   const cargoRefs = useRef(new Map<string, THREE.Group>());
-  const pendingTime = useStore((s) => (engine ? 0 : s.time));
+  const pendingTime = useSimulationStore((s) => (engine ? 0 : s.time));
   const snapshot = useMemo(
     () => (engine ? [] : materialSnapshot(pendingTime)),
     [engine, pendingTime],
@@ -116,10 +117,10 @@ export function HandlingScene({ clock }: { clock: React.RefObject<number> }) {
         .then(async ({ HandlingPhysics, initHandlingPhysics }) => {
           await initHandlingPhysics();
           if (cancelled) return;
-          world = new HandlingPhysics(useStore.getState().time);
+          world = new HandlingPhysics(useSimulationStore.getState().time);
           clock.current = world.time;
           setEngine(world);
-          useStore.setState({
+          useSimulationStore.setState({
             deliveries: [...world.deliveries],
             simulationReady: true,
           });
@@ -130,7 +131,7 @@ export function HandlingScene({ clock }: { clock: React.RefObject<number> }) {
           // Keep material flow alive when the canvas is hidden on inventory pages.
           timer = setInterval(() => {
             if (!world) return;
-            const state = useStore.getState(),
+            const state = useSimulationStore.getState(),
               now = performance.now(),
               dt = Math.min(0.2, (now - last) / 1000);
             last = now;
@@ -158,21 +159,24 @@ export function HandlingScene({ clock }: { clock: React.RefObject<number> }) {
               state.deliveries === undefined
             )
               state.setDeliveries([...world.deliveries]);
-            if (world.failures.length && !state.paused)
-              useStore.setState({
-                paused: true,
-                notice: tr("货物未确认落位，已暂停检查：{0}", {
-                  0: world.failures[0],
-                }),
-              });
+            if (world.failures.length && !state.paused) {
+              useSimulationStore.setState({ paused: true });
+              useStore
+                .getState()
+                .notify(
+                  tr("货物未确认落位，已暂停检查：{0}", {
+                    0: world.failures[0],
+                  }),
+                );
+            }
           }, 16);
         })
         .catch((error: unknown) => {
           if (cancelled) return;
-          useStore.setState({
-            paused: true,
-            notice: tr("货物物理引擎加载失败：{0}", { 0: String(error) }),
-          });
+          useSimulationStore.setState({ paused: true });
+          useStore
+            .getState()
+            .notify(tr("货物物理引擎加载失败：{0}", { 0: String(error) }));
         });
     });
     return () => {
@@ -180,7 +184,7 @@ export function HandlingScene({ clock }: { clock: React.RefObject<number> }) {
       cancelStartup();
       if (timer) clearInterval(timer);
       world?.dispose();
-      useStore.setState({ simulationReady: false });
+      useSimulationStore.setState({ simulationReady: false });
     };
   }, [clock]);
   useFrame(() => {

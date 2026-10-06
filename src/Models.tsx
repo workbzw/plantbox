@@ -1,8 +1,9 @@
-import { tr } from "./i18n";
 import { useEffect, useMemo } from "react";
 import * as THREE from "three";
-import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { SITE } from "./config/site";
+import { tr } from "./i18n";
 import { DOCK_X, FORKLIFT, SLOT_Z, STORAGE_X } from "./logistics";
 
 const matCache = new Map<string, THREE.MeshStandardMaterial>();
@@ -353,7 +354,7 @@ export function Warehouse({
         <primitive object={roof} />
       </group>
       <Sign
-        text={tr("PLANTBOX  /  昆仑元仓储中心")}
+        text={tr(SITE.sign)}
         position={[-8, 6.1, 2.38]}
         width={12}
         height={1.1}
@@ -565,16 +566,56 @@ export function ContainerModel({ color = "#36728b" }: { color?: string }) {
   );
 }
 
+function TruckSideDoor({
+  rig,
+  color,
+}: {
+  rig: React.RefObject<THREE.Group | null>;
+  color: string;
+}) {
+  const panel = useMemo(() => {
+    const b = new Builder();
+    b.box([0.08, 2.8, 6.6], [1.32, -1.4, -1.6], "#f0f1e9");
+    for (let z = -4.7; z < 1.7; z += 0.22)
+      b.box([0.018, 2.56, 0.018], [1.37, -1.43, z], "#d8dfdf");
+    return b.build();
+  }, []);
+  useEffect(
+    () => () => {
+      panel.traverse((o) => {
+        if (o instanceof THREE.Mesh) o.geometry.dispose();
+      });
+    },
+    [panel],
+  );
+  return (
+    <group ref={rig} name="loading-side-door" position={[0, 3.98, 0]}>
+      <primitive object={panel} />
+      <Sign
+        text="▣  PLANTBOX"
+        position={[1.399, -1.31, -1.3]}
+        rotation={[0, Math.PI / 2, 0]}
+        width={4.55}
+        height={1.1}
+        background="#f0f1e9"
+        color={color}
+      />
+    </group>
+  );
+}
+
 export function TruckModel({
   color = "#2855ce",
   openSide = false,
   wheelRig,
   reversing = false,
+  sideDoorRig,
 }: {
   color?: string;
   openSide?: boolean;
   wheelRig?: React.RefObject<THREE.Group | null>;
   reversing?: boolean;
+  sideDoorRig?: React.RefObject<THREE.Group | null>;
 }) {
   const model = useMemo(() => {
     const b = new Builder();
@@ -583,13 +624,13 @@ export function TruckModel({
     b.box([0.08, 2.8, 6.6], [-1.32, 2.58, -1.6], "#f0f1e9");
     b.box([2.64, 2.8, 0.08], [0, 2.58, -4.86], "#e4e8e5");
     b.box([2.64, 2.8, 0.08], [0, 2.58, 1.66], "#e4e8e5");
-    if (openSide)
+    if (openSide || sideDoorRig)
       b.round([0.19, 0.38, 6.58], [1.34, 3.83, -1.6], "#e2e8e5", 0.07);
     else b.box([0.08, 2.8, 6.6], [1.32, 2.58, -1.6], "#f0f1e9");
     b.box([2.76, 0.26, 6.6], [0, 1.12, -1.6], color);
     b.box([2.74, 0.13, 6.65], [0, 4.04, -1.6], "#bfcdd8");
     for (let z = -4.7; z < 1.7; z += 0.22)
-      for (const x of openSide ? [-1.37] : [-1.37, 1.37])
+      for (const x of openSide || sideDoorRig ? [-1.37] : [-1.37, 1.37])
         b.box([0.018, 2.56, 0.018], [x, 2.55, z], "#d8dfdf");
     b.round([2.64, 2.4, 2.52], [0, 2.04, 3.1], color, 0.22, 0.22);
     b.round([2.35, 0.38, 1.65], [0, 3.3, 2.95], color, 0.18, 0.22);
@@ -610,7 +651,7 @@ export function TruckModel({
     for (const x of [-0.7, 0.7])
       b.box([0.04, 2.4, 0.05], [x, 2.4, -4.94], "#96aab6");
     return b.build();
-  }, [color, openSide]);
+  }, [color, openSide, sideDoorRig]);
   useEffect(
     () => () => {
       model.traverse((o) => {
@@ -641,7 +682,8 @@ export function TruckModel({
           />
         </mesh>
       ))}
-      {!openSide && (
+      {sideDoorRig && <TruckSideDoor rig={sideDoorRig} color={color} />}
+      {!openSide && !sideDoorRig && (
         <Sign
           text="▣  PLANTBOX"
           position={[1.399, 2.67, -1.3]}

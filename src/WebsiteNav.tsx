@@ -1,15 +1,15 @@
-import { useEffect, useRef } from "react";
 import {
   ArrowUpRight,
+  BookOpen,
   ChevronDown,
   Github,
   Globe2,
   Home,
   Warehouse,
-  BookOpen,
 } from "lucide-react";
-import { readmeHref, routeHref } from "./routing";
+import { useEffect, useRef } from "react";
 import type { Locale, WebsitePage } from "./routing";
+import { readmeHref, routeHref } from "./routing";
 
 export function LanguageSwitch({
   locale,
@@ -89,6 +89,10 @@ export function ProjectMenu({
         >
           <Warehouse size={17} />
           {locale === "zh" ? "完整仓储演示" : "Full warehouse demo"}
+        </a>
+        <a href={routeHref(locale, "operations")}>
+          <Warehouse size={17} />
+          {locale === "zh" ? "作业管理" : "Operations"}
         </a>
         <a href={readmeHref(locale)} target="_blank" rel="noreferrer">
           <BookOpen size={17} />

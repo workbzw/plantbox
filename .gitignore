@@ -25,3 +25,9 @@ playwright-report/
 Thumbs.db
 *.swp
 *.swo
+
+# Local warehouse database (including SQLite journal/WAL files)
+/data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

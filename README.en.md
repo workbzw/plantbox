@@ -8,19 +8,20 @@ A working logistics site in your browser. Built with React, TypeScript, React Th
 
 ## Website and demo
 
-The homepage introduces the project. The project menu opens the full warehouse demo, documentation and GitHub. Chinese is the default language. Both languages have direct, refreshable and shareable URLs. Switching languages keeps the current page; inside the demo, it also preserves the clock, camera, inventory and operation progress.
+The homepage introduces the project. The project menu opens the full warehouse demo, operations, documentation and GitHub. Chinese is the default language. Both languages have direct, refreshable and shareable URLs. Switching languages keeps the current page; inside the demo, it also preserves the clock, camera, inventory and operation progress.
 
 | Page                 | English                      | 简体中文                          |
 | -------------------- | ---------------------------- | --------------------------------- |
 | Project homepage     | `/#/en`                      | `/#/zh` (`/` defaults to Chinese) |
 | Full warehouse demo  | `/#/en/demo`                 | `/#/zh/demo`                      |
+| Operations           | `/#/en/operations`           | `/#/zh/operations`                |
 | GitHub documentation | [README.en.md](README.en.md) | [README.md](README.md)            |
 
 English pages link to the English demo and documentation; Chinese pages link to their Chinese counterparts. The demo's project menu returns to the homepage in the same language. The homepage uses a WebP capture of the actual scene. Three.js, physics and the simulation clock load only when you enter the demo.
 
 ## Run locally
 
-Requires Node.js 22.18+; Node.js 24 is recommended.
+Requires Node.js 24.14+.
 
 ```sh
 npm install
@@ -34,6 +35,19 @@ npm test         # Inventory, vehicle kinematics, collision and 30-minute physic
 npm run build   # TypeScript checks and production build
 npm run preview # Preview the production build in dist
 ```
+
+## Backend and new architecture
+
+Demo and backend sources provide a shared inventory/shipment/activity contract. UI state, simulation state, site configuration and feature pages are separated. The Node.js + SQLite backend persists arrival, docking, handling start, per-pallet confirmation, completion and departure. Retried commands cannot double-count inventory.
+
+```sh
+npm run seed      # Optional sample business data; preserves existing records
+npm run dev:full  # Frontend :5173 and backend :3001
+```
+
+Open [English operations](http://localhost:5173/#/en/operations). Sample data is labeled and changes persist in `data/warehouse.sqlite`. Without seed, the database starts empty. The original demo requires no backend. The operations scene queues confirmed work into entry, reverse docking, per-pallet forklift handling and departure animations. Cargo stays aboard departing trucks or remains in the receiving area. Playback supports pause, speed controls and progress retention across operations tabs. This is confirmed-work replay, not live tracking; animation never changes inventory. The desktop workspace places the yard on the left and a phone-shaped field terminal on the right. Mobile uses Actions / Scene switching. Disconnections retain the last confirmed snapshot and disable actions without substituting simulated data.
+
+This is a runnable business foundation. Cameras, WMS/ERP, production manifest import, user roles and operator audit remain future work. See [Architecture](docs/architecture.en.md) for boundaries, API, transactions, deployment and limitations.
 
 ## Features
 
@@ -88,7 +102,7 @@ Hash routing requires no server-side route fallback for the pages above. Asset U
 
 ## Simulation boundaries
 
-This is the first single-site version; it has not been extended to five sites. Business data is simulated, with no WMS, ERP, sensor or backend connection.
+This is the first single-site version; it has not been extended to five sites. Demo data is simulated. The separate operations route connects to the project backend; WMS, ERP and site devices are not integrated yet.
 
 All views share the simulation clock and physical delivery ledger. Inventory changes only when cargo is actually placed; reaching a planned timestamp does not confirm a delivery. A run lasts up to 30 minutes of simulated site time and can then be reset. Reloading the page restores the initial state.
 
@@ -121,16 +135,18 @@ References: [OSHA load handling](https://www.osha.gov/etools/powered-industrial-
 
 ## Code structure
 
+Business contracts live in `src/domain/` and `src/data/`; pages in `src/features/`; configuration in `src/config/`; backend code in `server/`. See [Architecture](docs/architecture.en.md).
+
 | File                                                  | Responsibility                                                        |
 | ----------------------------------------------------- | --------------------------------------------------------------------- |
 | `src/Website.tsx` / `src/routing.ts`                  | Language routing, page metadata and lazy demo entry                   |
 | `src/Landing.tsx` / `src/WebsiteNav.tsx`              | Bilingual homepage, project menu and language switch                  |
 | `src/i18n.ts` / `src/translations.en.ts`              | Chinese/English demo UI and scene signage                             |
-| `src/App.tsx`                                         | Interface, inventory, shipments, search and dialogs                   |
+| `src/App.tsx`                                         | Demo shell, navigation, search and settings                           |
 | `src/Scene.tsx`                                       | Rendering, cameras, interaction and animation                         |
 | `src/Models.tsx`                                      | Parametric models, merged geometry, materials and signs               |
 | `src/simulation.ts`                                   | Work phases, inventory, capacity and event calculations               |
-| `src/store.ts`                                        | Shared state and user actions                                         |
+| `src/state/`                                          | Separate UI and simulation stores                                     |
 | `src/simulation.test.ts`                              | Core business-boundary tests                                          |
 | `src/truckMotion.ts`                                  | Rear-axle paths, speed profiles, steering and wheel travel            |
 | `src/truckMotion.test.ts`                             | Slip, gear changes, turning radii and swept-envelope checks           |

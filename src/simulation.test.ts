@@ -1,5 +1,7 @@
-import test from "node:test";
 import assert from "node:assert/strict";
+import test from "node:test";
+import { deliveryTime } from "./forkliftMotion.ts";
+import { LOAD_END } from "./logistics.ts";
 import {
   CYCLE,
   DEMO_END,
@@ -11,9 +13,7 @@ import {
   SKUS,
   TRUCKS,
 } from "./simulation.ts";
-import { LOAD_END } from "./logistics.ts";
-import { deliveryTime } from "./forkliftMotion.ts";
-import { useStore } from "./store.ts";
+import { useSimulationStore as useStore } from "./state/simulationStore.ts";
 
 test("inventory changes once at the completed handling boundary", () => {
   const at = deliveryTime(0, 0, 0);

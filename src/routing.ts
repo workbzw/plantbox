@@ -1,5 +1,5 @@
 export type Locale = "zh" | "en";
-export type WebsitePage = "home" | "demo";
+export type WebsitePage = "home" | "demo" | "operations";
 
 // Hash URLs also work when dist is served without a server-side route fallback.
 export function parseRoute(hash: string): {
@@ -9,12 +9,13 @@ export function parseRoute(hash: string): {
   const [language, page] = hash.replace(/^#\/?/, "").split("/");
   return {
     locale: language === "en" ? "en" : "zh",
-    page: page === "demo" ? "demo" : "home",
+    page:
+      page === "operations" ? "operations" : page === "demo" ? "demo" : "home",
   };
 }
 
 export function routeHref(locale: Locale, page: WebsitePage = "home") {
-  return `#/${locale}${page === "demo" ? "/demo" : ""}`;
+  return `#/${locale}${page === "home" ? "" : `/${page}`}`;
 }
 
 export function currentLocale(): Locale {

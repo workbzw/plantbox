@@ -68,7 +68,7 @@ type Segment = {
   stage: HandlingStage;
   travelStart: number;
 };
-interface Plan {
+export interface HandlingPlan {
   segments: Segment[];
   pickupAt: number;
   deliveryAt: number;
@@ -81,7 +81,7 @@ const corridorZ = 14.1;
 const quarter = Math.PI / 2;
 const yawEast = Math.PI / 2,
   yawWest = Math.PI * 1.5;
-const plans = new Map<string, Plan>();
+const plans = new Map<string, HandlingPlan>();
 const supportHeight = (base: number) =>
   base + PALLET.deckBottom - FORKLIFT.tineThickness / 2 - FLOOR_Y;
 const low = supportHeight(FLOOR_Y + 0.2);
@@ -104,15 +104,27 @@ function integrate(from: State, distance: number, curvature: number) {
       };
 }
 
-export function jobPlan(cycle: number, dock: number, slot: number): Plan {
-  const key = `${cycle}:${dock}:${slot}`;
+export interface HandlingPlanOptions {
+  inbound: boolean;
+  sourceBase: number;
+  destinationBase: number;
+  fromSlot: number;
+  returnSlot: number;
+}
+export function jobPlan(
+  cycle: number,
+  dock: number,
+  slot: number,
+  options?: HandlingPlanOptions,
+): HandlingPlan {
+  const key = `${cycle}:${dock}:${slot}:${options ? JSON.stringify(options) : "demo"}`;
   const cached = plans.get(key);
   if (cached) return cached;
-  const inbound = dock === 1,
+  const inbound = options?.inbound ?? dock === 1,
     z = SLOT_Z[slot];
   let state: State = {
     x: inbound ? ready.truck : ready.yard,
-    z,
+    z: SLOT_Z[options?.fromSlot ?? slot],
     rot: inbound ? yawWest : yawEast,
     lift: empty,
     tilt: 0,
@@ -186,12 +198,18 @@ export function jobPlan(cycle: number, dock: number, slot: number): Plan {
     move(state.z - (targetZ + radius), 0, loaded ? 1 : 1.45, stage);
     turn(1, toYard ? -1 : 1, speed, stage);
   };
-  const sourceBase = inbound
-    ? TRUCK_BED_Y
-    : FLOOR_Y + Math.max(0, STOCK_LAYERS - 1 - cycle) * PALLET.height;
-  const destinationBase = inbound
-    ? FLOOR_Y + cycle * PALLET.height
-    : TRUCK_BED_Y;
+  if (options && options.fromSlot !== slot) {
+    toHolding(!inbound, false);
+    fromHolding(!inbound, z, false);
+  }
+  const sourceBase =
+    options?.sourceBase ??
+    (inbound
+      ? TRUCK_BED_Y
+      : FLOOR_Y + Math.max(0, STOCK_LAYERS - 1 - cycle) * PALLET.height);
+  const destinationBase =
+    options?.destinationBase ??
+    (inbound ? FLOOR_Y + cycle * PALLET.height : TRUCK_BED_Y);
   const sourceFront = inbound
     ? 1.85
     : STORAGE_X - (FORKLIFT.cargoZ - FORKLIFT.frontAxle);
@@ -226,11 +244,11 @@ export function jobPlan(cycle: number, dock: number, slot: number): Plan {
   );
   wait(3, "lower", empty, 0);
   toHolding(inbound, false);
-  fromHolding(!inbound, SLOT_Z[(slot + 1) % 6], false);
+  fromHolding(!inbound, SLOT_Z[options?.returnSlot ?? (slot + 1) % 6], false);
   const finishAt = time;
-  if (finishAt > JOB_SECONDS)
+  if (!options && finishAt > JOB_SECONDS)
     throw new Error(`Forklift job exceeds available time: ${key}: ${finishAt}`);
-  wait(JOB_SECONDS - time, "waiting");
+  wait(options ? 0.1 : JOB_SECONDS - time, "waiting");
   const plan = { segments, pickupAt, deliveryAt, finishAt };
   plans.set(key, plan);
   return plan;
@@ -265,6 +283,25 @@ export function forkliftPose(localTime: number, dock: number): ForkliftPose {
     : 0;
   const jobTime = active ? t - LOAD_START - job * JOB_SECONDS : 0;
   const plan = jobPlan(Math.min(cycle, STOCK_LAYERS - 1), dock, job);
+  return sampleHandlingPlan(plan, jobTime, dock, active, job, cycle);
+}
+
+/** The same rolling-constrained path can be driven by a clock or a confirmed business event. */
+export function sampleHandlingPlan(
+  plan: HandlingPlan,
+  jobTime: number,
+  dock: number,
+  active = true,
+  job = 0,
+  cycle = 0,
+): ForkliftPose {
+  jobTime = Math.max(
+    0,
+    Math.min(
+      plan.segments.at(-1)!.start + plan.segments.at(-1)!.duration - 1e-8,
+      jobTime,
+    ),
+  );
   const segment =
     plan.segments.find((s) => jobTime < s.start + s.duration) ??
     plan.segments.at(-1)!;
