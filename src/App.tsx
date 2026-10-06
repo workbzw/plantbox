@@ -562,10 +562,10 @@ function SiteDetails() {
         </span>
         <div>
           <span className="eyebrow">WAREHOUSE · WH-01</span>
-          <h2>{tr("滨河仓储中心")}</h2>
+          <h2>{tr("昆仑元仓储中心")}</h2>
           <p>
             <MapPin size={12} />
-            {tr("上海 · 闵行物流园")}
+            {tr("上海 · 昆仑元物流园")}
           </p>
         </div>
       </div>
@@ -1025,7 +1025,7 @@ function InventoryPage() {
           <span className="eyebrow">INVENTORY MANAGEMENT</span>
           <h1>{tr("库存管理")}</h1>
           <p>
-            {tr("滨河仓储中心")}
+            {tr("昆仑元仓储中心")}
             <span> / </span>
             {tr("每一次流转，都清晰可见")}
           </p>
@@ -1227,7 +1227,7 @@ function ShipmentsPage() {
                     <strong>
                       {t.direction === "inbound"
                         ? t.destination
-                        : tr("滨河仓储中心")}
+                        : tr("昆仑元仓储中心")}
                     </strong>
                   </div>
                 </span>
@@ -1237,7 +1237,7 @@ function ShipmentsPage() {
                     <small>{tr("目的地")}</small>
                     <strong>
                       {t.direction === "inbound"
-                        ? tr("滨河仓储中心")
+                        ? tr("昆仑元仓储中心")
                         : t.destination}
                     </strong>
                   </div>
@@ -1485,7 +1485,7 @@ export default function App({ locale }: { locale: Locale }) {
     page: Page;
   }[] = [
     {
-      label: tr("滨河仓储中心"),
+      label: tr("昆仑元仓储中心"),
       sub: tr("WH-01 · 仓储站点"),
       icon: Warehouse,
       selection: { kind: "site", id: "WH-01" },
@@ -1682,7 +1682,7 @@ export default function App({ locale }: { locale: Locale }) {
                 <div>
                   <div className="scene-eyebrow">
                     <span className="small-dot blue" />
-                    RIVERSIDE LOGISTICS PARK
+                    KUNLUN YUAN LOGISTICS PARK
                   </div>
                   <h1>
                     {tr("园区总览")}

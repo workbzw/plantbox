@@ -353,7 +353,7 @@ export function Warehouse({
         <primitive object={roof} />
       </group>
       <Sign
-        text={tr("PLANTBOX  /  滨河仓储中心")}
+        text={tr("PLANTBOX  /  昆仑元仓储中心")}
         position={[-8, 6.1, 2.38]}
         width={12}
         height={1.1}

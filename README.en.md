@@ -4,7 +4,7 @@
 
 A working logistics site in your browser. Built with React, TypeScript, React Three Fiber and Three.js, Plantbox connects a 3D environment, physical cargo handling and operation data.
 
-![Actual Plantbox warehouse scene](public/images/warehouse.webp)
+![Actual Kunlun Yuan Warehouse scene](public/images/kunlun-yuan-warehouse-en.webp)
 
 ## Website and demo
 
@@ -37,7 +37,7 @@ npm run preview # Preview the production build in dist
 
 ## Features
 
-- A complete Riverside Warehouse site: pitched-roof warehouse, interior racks, three docks, glass-fronted office, container yard, barriers, roads, fences and landscaping.
+- A complete Kunlun Yuan Warehouse site: pitched-roof warehouse, interior racks, three docks, glass-fronted office, container yard, barriers, roads, fences and landscaping.
 - Procedural 3D models with static geometry merged by material. Fonts ship locally; no model or font CDN is required at runtime.
 - Three trucks cycle through arrival, docking, handling, departure and transit. Three rear-steered forklifts insert forks, lift, carry loads low and set them down.
 - Independent pallet rigid bodies with stable IDs. Yard cargo exists before pickup. Cargo unloaded from the orange truck stays in the receiving area; cargo loaded onto the other trucks stays in assigned positions and leaves with them.

@@ -32,9 +32,9 @@ const copy = {
     note: "无需安装 · 打开浏览器，即刻探索",
     status: "程序化园区 / 实际场景截帧",
     preview: "探索这座园区",
-    figure: "WH–01 / 滨河仓储中心",
+    figure: "WH–01 / 昆仑元仓储中心",
     imageAlt:
-      "Plantbox 实际三维场景：开放屋顶的仓库、三个月台、货车、叉车与货物",
+      "昆仑元仓储中心实际三维场景：开放屋顶的仓库、三个月台、货车、叉车与货物",
     spec: ["装卸月台", "作业叉车", "交互式模拟"],
     minutes: "分钟",
     built: "由这些开源技术构建",
@@ -104,9 +104,9 @@ const copy = {
     note: "No installation. Just open your browser and explore.",
     status: "PROCEDURAL WORLD / ACTUAL SCENE CAPTURE",
     preview: "Explore the site",
-    figure: "WH–01 / RIVERSIDE WAREHOUSE",
+    figure: "WH–01 / KUNLUN YUAN WAREHOUSE",
     imageAlt:
-      "Actual Plantbox 3D scene with an open-roof warehouse, three loading docks, trucks, forklifts and cargo",
+      "Actual Kunlun Yuan Warehouse 3D scene with an open-roof warehouse, three loading docks, trucks, forklifts and cargo",
     spec: ["Loading docks", "Working forklifts", "Interactive simulation"],
     minutes: "min",
     built: "Built with open-source tools",
@@ -266,7 +266,7 @@ export function Landing({ locale }: { locale: Locale }) {
             </div>
             <img
               className="hero-warehouse-image"
-              src="/images/warehouse.webp"
+              src={`/images/kunlun-yuan-warehouse-${locale}.webp`}
               alt={c.imageAlt}
               width="1600"
               height="1000"

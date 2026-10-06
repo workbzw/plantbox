@@ -302,7 +302,7 @@ function World({ onReady }: { locale: Locale; onReady: () => void }) {
         >
           <span className="tag-cube">▣</span>
           <div>
-            <b>{tr("滨河仓储中心")}</b>
+            <b>{tr("昆仑元仓储中心")}</b>
             <small>{tr("WH-01 · 运行正常")}</small>
           </div>
         </button>
