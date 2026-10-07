@@ -16,7 +16,13 @@ export function ActivityPage() {
           <p>{tr("装卸事件与库存变化保持同步")}</p>
         </div>
         <Status>
-          {tr(snapshot.mode === "demo" ? "模拟事件流" : "后台确认记录")}
+          {tr(
+            snapshot.mode === "demo"
+              ? "模拟事件流"
+              : snapshot.mode === "interactive"
+                ? "演示操作记录"
+                : "后台确认记录",
+          )}
         </Status>
       </div>
       <div className="table-panel activity-panel">

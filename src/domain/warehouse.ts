@@ -1,6 +1,6 @@
 /** Versioned boundary shared by both data sources and the HTTP service. No React/Three dependencies. */
 export const API_VERSION = 1 as const;
-export type SourceMode = "demo" | "live";
+export type SourceMode = "demo" | "interactive" | "live";
 export type Direction = "inbound" | "outbound";
 export type ShipmentStatus =
   | "expected"

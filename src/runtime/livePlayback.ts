@@ -193,7 +193,7 @@ export class LivePlayback {
   }
   ingest(snapshot: WarehouseSnapshot) {
     if (
-      snapshot.mode !== "live" ||
+      snapshot.mode === "demo" ||
       (this.observed && snapshot.revision <= this.observed.revision)
     )
       return;

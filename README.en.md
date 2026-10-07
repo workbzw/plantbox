@@ -36,18 +36,15 @@ npm run build   # TypeScript checks and production build
 npm run preview # Preview the production build in dist
 ```
 
-## Backend and new architecture
+## Browser-only operations workspace
 
-Demo and backend sources provide a shared inventory/shipment/activity contract. UI state, simulation state, site configuration and feature pages are separated. The Node.js + SQLite backend persists arrival, docking, handling start, per-pallet confirmation, completion and departure. Retried commands cannot double-count inventory.
+Open [English operations](http://localhost:5173/#/en/operations). No backend, credentials or database setup is required. Every demo route works with `npm run dev` or static hosting.
 
-```sh
-npm run seed      # Optional sample business data; preserves existing records
-npm run dev:full  # Frontend :5173 and backend :3001
-```
+The desktop workspace pairs the 3D yard on the left with a phone-shaped terminal on the right. Mobile uses Actions / Scene switching. Select a vehicle, confirm arrival, docking and handling start, choose pallet IDs from the manifest, then finish handling and confirm departure. The orange truck unloads inbound cargo; the other two load outbound cargo. Inventory, shipments and activity share one in-memory dataset. Retries never double-count stock; invalid steps or mismatched pallets display an error.
 
-Open [English operations](http://localhost:5173/#/en/operations). Sample data is labeled and changes persist in `data/warehouse.sqlite`. Without seed, the database starts empty. The original demo requires no backend. The operations scene queues confirmed work into entry, reverse docking, per-pallet forklift handling and departure animations. Cargo stays aboard departing trucks or remains in the receiving area. Playback supports pause, speed controls and progress retention across operations tabs. This is confirmed-work replay, not live tracking; animation never changes inventory. The desktop workspace places the yard on the left and a phone-shaped field terminal on the right. Mobile uses Actions / Scene switching. Disconnections retain the last confirmed snapshot and disable actions without substituting simulated data.
+Actions queue entry, reverse docking, door opening, individual forklift pickups and placements, door closing and departure. Cargo stays aboard departing trucks or remains in the receiving area. Playback supports pause and 1× / 2× / 4× speeds. Operations tabs and language changes preserve progress. Refreshing, leaving the operations route or choosing Reset demo restores the initial data and clears the animation queue.
 
-This is a runnable business foundation. Cameras, WMS/ERP, production manifest import, user roles and operator audit remain future work. See [Architecture](docs/architecture.en.md) for boundaries, API, transactions, deployment and limitations.
+This is an interactive frontend demo. Data stays in the current page's memory, is not shared across devices and is not saved to a database. Handling uses operation-driven kinematic animation; cameras, WMS/ERP and live tracking are not connected. The original full demo continues to use Rapier rigid-body handling. See [Architecture](docs/architecture.en.md) for module boundaries and deployment.
 
 ## Features
 
@@ -102,7 +99,7 @@ Hash routing requires no server-side route fallback for the pages above. Asset U
 
 ## Simulation boundaries
 
-This is the first single-site version; it has not been extended to five sites. Demo data is simulated. The separate operations route connects to the project backend; WMS, ERP and site devices are not integrated yet.
+This is the first single-site version; it has not been extended to five sites. Both the full warehouse demo and the operations workspace use frontend demo data. WMS, ERP and site devices are not integrated yet.
 
 All views share the simulation clock and physical delivery ledger. Inventory changes only when cargo is actually placed; reaching a planned timestamp does not confirm a delivery. A run lasts up to 30 minutes of simulated site time and can then be reset. Reloading the page restores the initial state.
 
@@ -135,7 +132,7 @@ References: [OSHA load handling](https://www.osha.gov/etools/powered-industrial-
 
 ## Code structure
 
-Business contracts live in `src/domain/` and `src/data/`; pages in `src/features/`; configuration in `src/config/`; backend code in `server/`. See [Architecture](docs/architecture.en.md).
+Data contracts and command rules live in `src/domain/`; frontend sources in `src/data/`; pages in `src/features/`; configuration in `src/config/`. Earlier optional service code remains in `server/`, but the website does not connect to or depend on it. See [Architecture](docs/architecture.en.md).
 
 | File                                                  | Responsibility                                                        |
 | ----------------------------------------------------- | --------------------------------------------------------------------- |

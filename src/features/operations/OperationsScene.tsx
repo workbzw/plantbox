@@ -98,7 +98,7 @@ export function OperationsScene({
             >
               <Scene
                 locale={locale}
-                mode="live"
+                mode="interactive"
                 active={sceneVisible}
                 focusDock={focusDock}
               />
@@ -138,7 +138,7 @@ export function OperationsScene({
         </div>
         <div className="business-position-note">
           <Eye size={12} />
-          {tr("已确认作业的动画演示 · 非实时定位")}
+          {tr("作业流程动画演示")}
         </div>
       </section>
       <aside

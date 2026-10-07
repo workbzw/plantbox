@@ -324,6 +324,18 @@ export const english: Record<string, string> = {
   "可用库存 = 实物库存 − 已预留。库存由后台确认的托盘交付更新。":
     "Available stock = physical stock − reserved stock. Inventory changes only after the backend confirms pallet delivery.",
   作业管理: "Operations",
+  前端交互演示: "Interactive demo",
+  演示: "Demo",
+  重置演示: "Reset demo",
+  交互演示: "Interactive demo",
+  演示操作记录: "Demo operations",
+  作业流程动画演示: "Operation workflow demo",
+  "演示数据仅保留在当前页面，刷新或重置后恢复初始状态。":
+    "Demo data stays in this page. Refresh or reset to start over.",
+  "从托盘清单选择编号，演示叉车搬运。":
+    "Choose a pallet ID from the manifest to watch the forklift handle it.",
+  "可用库存 = 实物库存 − 已预留。库存随演示中的托盘交付更新。":
+    "Available stock = physical stock − reserved stock. Inventory updates with pallet confirmations in this demo.",
   "业务位置示意 · 叉车位置未接入":
     "Business locations · forklift tracking unavailable",
   库存与车辆状态由后台确认:

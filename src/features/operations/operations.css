@@ -11,6 +11,19 @@
 .operations-app .header-actions {
   margin-left: auto;
 }
+.operations-reset {
+  white-space: nowrap;
+}
+@media (max-width: 600px) {
+  .operations-reset {
+    min-width: 36px;
+    min-height: 36px;
+    justify-content: center;
+  }
+  .operations-reset span {
+    display: none;
+  }
+}
 .operations-app .brand {
   min-width: 0;
   text-decoration: none;

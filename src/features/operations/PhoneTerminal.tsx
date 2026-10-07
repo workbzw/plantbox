@@ -28,7 +28,7 @@ const instructions: Record<Shipment["status"], string> = {
   expected: "确认车辆已到达园区入口。",
   arrived: "确认车辆已停稳在指定月台。",
   docked: "车辆就位后，开始本次装卸作业。",
-  handling: "逐托输入编号，确认实际交付的货物。",
+  handling: "从托盘清单选择编号，演示叉车搬运。",
   completed: "装卸已完成，确认车辆离开园区。",
   departed: "本次作业已结束，可切换车辆继续操作。",
 };
@@ -115,12 +115,10 @@ export function PhoneTerminal({
           </div>
           <span
             className={`terminal-connection ${connection}`}
-            title={tr(
-              connection === "connected" ? "后台已连接" : "后台连接中断",
-            )}
+            title={tr("前端交互演示")}
           >
             <i />
-            {tr(connection === "connected" ? "已连接" : "未连接")}
+            {tr("演示")}
           </span>
         </header>
         <div className="phone-scroll">

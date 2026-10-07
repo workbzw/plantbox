@@ -327,9 +327,9 @@ function World({
           <div>
             <b>{tr(SITE.name)}</b>
             <small>
-              {mode === "live"
-                ? `${SITE.id} · ${tr("业务状态")}`
-                : tr("WH-01 · 运行正常")}
+              {mode === "demo"
+                ? tr("WH-01 · 运行正常")
+                : `${SITE.id} · ${tr(mode === "interactive" ? "交互演示" : "业务状态")}`}
             </small>
           </div>
         </button>

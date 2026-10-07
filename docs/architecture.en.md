@@ -2,116 +2,89 @@
 
 [中文](architecture.md) · [English](architecture.en.md)
 
-## Two isolated operating modes
+## Runtime boundaries
 
-- `/#/en/demo`: the original 30-minute physical simulation. State lives in the browser and resets on reload.
-- `/#/en/operations`: persisted backend data. User actions go through validated HTTP commands.
+The homepage and both demo routes run entirely in the browser and can be hosted statically:
 
-Both modes implement `WarehouseDataSource` and expose `WarehouseSnapshot` v1. Inventory, shipment and activity pages share these contracts, models and camera controls. The demo keeps its Rapier handling. Operations turn confirmed snapshot changes into a separate animation queue, reusing constrained truck paths and forklift handling paths. Rendering and animation never update persisted inventory.
+- `/#/en/demo`: the original 30-minute physical simulation, driven by its clock and Rapier handling.
+- `/#/en/operations`: interactive operations, with phone terminal actions driving yard animation.
+
+They share `WarehouseSnapshot` / `WarehouseDataSource`, inventory, shipments, activity, models and cameras while keeping independent state. Snapshot modes are `demo` and `interactive` respectively. Operations uses a page-scoped memory source with no API requests, polling, credentials or database dependency.
 
 ```mermaid
 flowchart LR
-    Clock[Demo clock] --> Physics[Motion and Rapier]
+    Clock[Demo clock] --> Physics[Paths and Rapier physics]
     Physics --> Demo[DemoSource]
-    Operator[Manual confirmation / scanner] --> API[Node HTTP API]
-    API --> DB[(SQLite)]
-    DB --> HTTP[HttpSource]
+    Operator[Phone terminal] --> Rules[Pure command validation]
+    Rules --> Interactive[InteractiveSource / page memory]
     Demo --> Snapshot[WarehouseSnapshot v1]
-    HTTP --> Snapshot
+    Interactive --> Snapshot
     Snapshot --> Pages[Inventory / shipments / activity]
-    Snapshot --> Playback[Business snapshot diff / animation queue]
+    Interactive --> Playback[Snapshot differences / animation queue]
     Playback --> Scene[3D scene]
 ```
 
 ## Modules
 
-| Path                                                       | Responsibility                                                                                |
-| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `src/config/`                                              | Site metadata, dock IDs/coordinates, sample catalog and demo assignments                      |
-| `src/domain/warehouse.ts`                                  | Versioned snapshot, pallet, shipment, event and command contracts; independent of React/Three |
-| `src/data/`                                                | Demo/HTTP adapters, subscriptions, connection lifecycle and React provider                    |
-| `src/state/uiStore.ts`                                     | Navigation, selection, camera, quality and UI notifications                                   |
-| `src/state/simulationStore.ts`                             | Demo clock, playback, adjustments and physical delivery records                               |
-| `src/runtime/DemoRuntime.tsx`                              | Demo route lifecycle and reset coordination                                                   |
-| `src/runtime/livePlayback.ts` / `LivePlaybackProvider.tsx` | Confirmed operation playback, route clearance, cargo poses and subscriptions                  |
-| `src/features/`                                            | Inventory, shipments, activity, inspector, scene tools and operations UI                      |
-| `src/components/`                                          | Shared buttons, statuses, dialogs and error boundaries                                        |
-| `src/Scene.tsx`, `Models.tsx`                              | Scene composition and procedural assets                                                       |
-| `src/*Motion.ts`, `handlingPhysics.ts`                     | Existing constrained motion and physical handling                                             |
-| `server/app.ts`                                            | HTTP transport, authentication, request validation and static serving                         |
-| `server/repository.ts`                                     | Schema, transactions, business transitions, idempotency and inventory projections             |
+| Path                                                           | Responsibility                                                                                |
+| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `src/config/`                                                  | Site metadata, dock positions, SKU catalog and sample vehicles                                |
+| `src/domain/warehouse.ts`                                      | Versioned snapshot, pallet, shipment, command and event types                                 |
+| `src/domain/commands.ts`                                       | Transitions, manifest validation and inventory projection; no React, Three or Node dependency |
+| `src/data/demoSource.ts`                                       | Original physical demo adapter                                                                |
+| `src/data/interactiveSource.ts`                                | Page-local interactive state, command deduplication and subscriptions                         |
+| `src/data/WarehouseProvider.tsx`                               | One shared data source for the page                                                           |
+| `src/state/uiStore.ts`                                         | Tabs, camera, selection, quality and interface state                                          |
+| `src/state/simulationStore.ts` / `src/runtime/DemoRuntime.tsx` | Original simulation clock, physical deliveries and reset                                      |
+| `src/runtime/livePlayback.ts` / `LivePlaybackProvider.tsx`     | Queued operations, road clearance, cargo poses and subscriptions                              |
+| `src/features/operations/`                                     | Workspace, phone terminal, pallet confirmations and playback controls                         |
+| `src/features/`                                                | Shared inventory, shipments, activity, details and scene tools                                |
+| `src/Scene.tsx` / `Models.tsx`                                 | Physical simulation or operation animation selected by mode                                   |
+| `src/*Motion.ts` / `handlingPhysics.ts`                        | Constrained vehicle paths and original rigid-body handling                                    |
 
-The geometry and calibrated demo paths still target WH-01's three docks. Centralized configuration is not an arbitrary warehouse editor. Adding docks requires coordinated model, path and collision-test changes. Existing lighting, initial camera zoom and physical cargo handling are preserved.
+WH-01 remains a fixed site with three calibrated docks. Adding docks requires coordinating models, paths and collision constraints.
 
-## Run
-
-Use Node.js 24.14+. SQLite uses Node's built-in module, which currently prints an experimental API warning.
+## Running and deployment
 
 ```sh
 npm install
-npm run seed       # Optional sample tasks; preserves existing data
-npm run dev:full   # Vite :5173 and backend :3001
+npm run dev
 ```
 
-Open `http://localhost:5173/#/en/operations`. Confirm arrival, docking and handling start. Then enter IDs from each shipment's pallet manifest, or use a scanner in keyboard-input mode. All assigned pallets must be confirmed before handling can complete and the vehicle can depart.
-
-Run separately with `npm run dev` and `npm run server`. The original demo works without a backend. If the backend becomes unavailable, operations retain the last snapshot, show an error and disable mutations. They never fall back to simulated data. The HTTP adapter polls a complete snapshot every two seconds and reconnects automatically.
-
-The default database is `data/warehouse.sqlite`, ignored by Git. Starting the backend does not invent data; `npm run seed` explicitly initializes labeled examples. Demo restocking and resets cannot modify the database.
+Open `http://localhost:5173/#/en/operations` or `/#/zh/operations` to operate three sample vehicles. Confirm arrival, docking and handling start, then fill and confirm pallet IDs from the manifest. All pallets must be confirmed before handling completion and departure.
 
 ```sh
 npm run build
-npm run server  # Serves dist and /api at http://127.0.0.1:3001 by default
+npm run preview
 ```
 
-Static hosting supports the homepage and physical demo. Operations need the Node service or a same-origin `/api` reverse proxy. The development proxy targets `127.0.0.1:3001`; update `vite.config.ts` if the backend port changes.
+Deploy `dist` to Vercel or another static host to use every website route. No Node service or `/api` proxy is required. Languages and pages use hash routing; assets assume deployment at the domain root.
 
-## Business invariants
+## Data and command rules
 
-- A pallet ID identifies a cargo unit containing SKU, quantity, batch, shipment and location. One SKU per pallet is supported initially.
-- Shipment lifecycle: `expected → arrived → docked → handling → completed → departed`.
-- Pallet confirmation is allowed only during handling, for a matching manifest/SKU and valid source location.
-- Outbound confirmation moves `storage → truck`, decreasing stored stock. Inbound confirmation moves `truck → storage`, increasing it.
-- Every manifest pallet must be confirmed before completion. Outbound departure marks cargo `departed` without deducting stock again. Received inbound cargo stays in storage after vehicle departure.
-- Inventory is derived from persisted pallet positions and quantities. Reservations come from outbound manifest pallets still in storage.
-- Each command, pallet update, shipment transition, event and revision update commits in one transaction.
-- Identical retries with the same command ID do not apply twice. Reusing an ID for different content is rejected. Scanning a confirmed pallet with a new command ID is also rejected.
-- Frames, browser clocks and physical contacts cannot change operational inventory. Mutations return complete authoritative snapshots; older in-flight polling responses cannot replace newer revisions.
-- The database retains events; the API currently exposes the latest 100. Pagination, operator-level audit identities and reversals are not implemented yet.
+- Each pallet has a stable ID, SKU, quantity, batch, shipment, location and confirmation flag. Initial cargo exists before handling begins.
+- Shipment states: `expected → arrived → docked → handling → completed → departed`.
+- Pallet confirmations are allowed only during `handling`, for matching shipments/SKUs at the expected source location.
+- Inbound confirmations move pallets from `truck` to `storage`; outbound confirmations do the reverse. Stock is derived from stored pallet quantities; reservations come from outstanding outbound manifests.
+- Completion requires a complete, fully confirmed manifest. Outbound departure marks aboard pallets `departed` without deducting stock again. Received inbound cargo remains in storage.
+- Each command carries a unique ID. Identical retries do not double-count. Conflicting reuse, duplicate scans, wrong manifests and invalid steps are rejected.
+- A successful command publishes one immutable snapshot containing shipment, pallet, inventory and activity updates. Failed operations leave the previous state intact.
+- Data stays in the current operations page's memory. Internal tabs and language changes preserve it. Reloading, leaving the operations route or resetting restores initial data. Browsers and devices do not share state.
 
-## Operations playback
+## Animation continuity
 
-- The first snapshot initializes current positions without replaying history. Later snapshots are compared against the last accepted revision and pallet confirmations. Duplicate or stale revisions never enqueue twice; missed polling intervals can reconstruct the full workflow.
-- Confirmations queue entry, reverse docking, door opening, individual pallet handling, door closing and departure. One action runs at a time. Swept vehicle paths must be clear; a blocked shipment yields to another available maneuver while retaining order within each shipment.
-- Forklifts approach the requested position empty, insert, lift, reverse clear, carry low, place, withdraw and return. Pallet IDs and render objects remain stable. Outbound cargo travels with the truck; inbound cargo remains on the floor. Business pallets use a single-layer layout.
-- This is kinematic playback of confirmed work, with cargo poses driven by forks and support surfaces. Operations do not load Rapier or represent live tracking. The original demo retains rigid bodies, contacts and physical delivery.
-- Inventory and the business inspector update immediately after backend confirmation. Animation may lag; controls show pending actions, pause/resume and 1× / 2× / 4× speed. The desktop workspace pairs a large yard view with a phone-shaped field terminal. Operators select a vehicle, confirm arrival/docking/handling/departure, or fill a pallet ID from the manifest before explicitly confirming it. Inventory, full shipments and activity retain dedicated pages.
-- Other operations tabs pause playback while preserving camera and progress; new confirmations still queue. Hidden browser tabs also pause. Reloading or leaving the operations route discards playback history and initializes from current business state.
-- Small screens default to an unframed terminal with Actions / Scene switching. 3D loads only on first entering Scene. Playback pauses in the terminal while confirmations continue queuing, then resumes in Scene. Feedback distinguishes queued, playing and synchronized states per shipment. The camera smoothly reframes at operation boundaries.
+- The first snapshot initializes poses. Later revisions enqueue entry, reverse docking, door opening, individual handling, door closing and departure. Duplicate or stale revisions never enqueue twice.
+- One action plays at a time. Swept truck paths enforce road clearance while retaining each shipment's operation order.
+- Forklifts approach the selected position empty, insert, lift, reverse clear, carry low, place, withdraw and return. Pallet IDs and render objects remain stable. Outbound cargo moves with trucks; inbound cargo stays on the floor.
+- The workspace uses operation-driven kinematic animation without Rapier or live tracking. The original full demo retains contacts, constraints and rigid-body cargo handling.
+- Inventory and activity update immediately on confirmation; animation may follow from the queue. Controls show pending actions, pause/resume and 1× / 2× / 4× speeds.
+- Desktop pairs the yard on the left with a phone terminal on the right. Small screens default to Actions; 3D loads only on entering Scene. Hidden scenes and browser tabs pause playback while preserving queued work.
+- Terminal feedback distinguishes queued, playing and synchronized states for the current vehicle. Cameras reframe smoothly at action boundaries. Reset recreates the source and playback instance, clearing pending actions and scene objects.
 
-## HTTP v1
+## Earlier optional service code
 
-- `GET /api/health`: health.
-- `GET /api/v1/snapshot`: inventory, shipments, pallets and recent events.
-- `POST /api/v1/commands`: `arrive / dock / start / confirm_pallet / complete / depart`.
+`server/` and `src/data/httpSource.ts` retain the earlier Node.js + SQLite service implementation. The website does not use them and they do not need deployment. The persistence adapter shares the same pure command and inventory rules while retaining transactions and command deduplication.
 
-```json
-{
-  "id": "a-unique-request-id",
-  "type": "confirm_pallet",
-  "shipmentId": "SHP-78442",
-  "palletId": "KLY-1-001"
-}
-```
+## Validation
 
-Quantities and SKU come from the server manifest. Confirmation requests cannot override inventory. If a network failure leaves the outcome uncertain, retry with the original command ID.
-
-## Deployment and remaining work
-
-See `.env.example` for the database path, address, port, trusted origins and API token. The service binds to loopback by default. External binding requires a `PLANTBOX_API_TOKEN` of at least 24 characters. Requests use `Authorization: Bearer …`; the UI retains the token only in memory, never bundles it into client code. Public operation additionally needs HTTPS, user login, roles, operator audit, backups and rate limiting.
-
-This is a runnable local business foundation. Sample tasks come from the seed command. Production manifest creation/import, mixed-pallet split/merge, stock adjustments, cancellation, real tracking and camera integration remain future work. Scene geometry does not automatically adapt to arbitrary backend locations. Add manifest management and operator identity before integrating plate recognition and scanners into the same validated transaction boundary.
-
-PostgreSQL can replace SQLite later while preserving the HTTP/snapshot protocol; the SQL and transaction adapter will require migration. Measure main-thread and scene load before moving demo physics into a Worker.
-
-Run `npm test` and `npm run build`. Coverage includes the existing 30-minute physical regression, inbound/outbound stock, retries, duplicate scans, invalid transitions/manifests, persistence across restart, HTTP authentication and data-source lifecycle.
+Run `npm test` and `npm run build`. Tests cover the original 30-minute physical simulation, truck/forklift paths, pallet continuity, all three interactive workflows without network access, stock accounting, invalid steps/manifests, retries and independent reset.
