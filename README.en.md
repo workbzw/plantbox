@@ -8,7 +8,7 @@ A working logistics site in your browser. Built with React, TypeScript, React Th
 
 ## Website and demo
 
-The homepage introduces the project. The project menu opens the full warehouse demo, operations, documentation and GitHub. Chinese is the default language. Both languages have direct, refreshable and shareable URLs. Switching languages keeps the current page; inside the demo, it also preserves the clock, camera, inventory and operation progress.
+The homepage opens with an interactive phone app alongside the 3D yard, followed by the project introduction. The project menu opens the full warehouse demo, standalone operations, documentation and GitHub. Chinese is the default language. Both languages have direct, refreshable and shareable URLs. Switching languages keeps the current page; inside the demo, it also preserves the clock, camera, inventory and operation progress.
 
 | Page                 | English                      | 简体中文                          |
 | -------------------- | ---------------------------- | --------------------------------- |
@@ -17,7 +17,7 @@ The homepage introduces the project. The project menu opens the full warehouse d
 | Operations           | `/#/en/operations`           | `/#/zh/operations`                |
 | GitHub documentation | [README.en.md](README.en.md) | [README.md](README.md)            |
 
-English pages link to the English demo and documentation; Chinese pages link to their Chinese counterparts. The demo's project menu returns to the homepage in the same language. The homepage uses a WebP capture of the actual scene. Three.js, physics and the simulation clock load only when you enter the demo.
+English pages link to the English demo and documentation; Chinese pages link to their Chinese counterparts. The demo's project menu returns to the homepage in the same language. Confirm arrival, handling and departure directly on the homepage. Desktop pairs the yard with a phone terminal; mobile defaults to Actions. Controls appear before the lazily loaded 3D scene. The interactive workspace does not load Rapier and pauses 3D rendering when scrolled out of view.
 
 ## Run locally
 
@@ -38,11 +38,11 @@ npm run preview # Preview the production build in dist
 
 ## Browser-only operations workspace
 
-Open [English operations](http://localhost:5173/#/en/operations). No backend, credentials or database setup is required. Every demo route works with `npm run dev` or static hosting.
+The homepage workspace and [standalone English operations](http://localhost:5173/#/en/operations) share the same interactive components. No backend, credentials or database setup is required. Every demo route works with `npm run dev` or static hosting.
 
 The desktop workspace pairs the 3D yard on the left with a phone-shaped terminal on the right. Mobile uses Actions / Scene switching. Select a vehicle, confirm arrival, docking and handling start, choose pallet IDs from the manifest, then finish handling and confirm departure. The orange truck unloads inbound cargo; the other two load outbound cargo. Inventory, shipments and activity share one in-memory dataset. Retries never double-count stock; invalid steps or mismatched pallets display an error.
 
-Actions queue entry, reverse docking, door opening, individual forklift pickups and placements, door closing and departure. Cargo stays aboard departing trucks or remains in the receiving area. Playback supports pause and 1× / 2× / 4× speeds. Operations tabs and language changes preserve progress. Refreshing, leaving the operations route or choosing Reset demo restores the initial data and clears the animation queue.
+Actions queue entry, reverse docking, door opening, individual forklift pickups and placements, door closing and departure. Cargo stays aboard departing trucks or remains in the receiving area. Playback supports pause and 1× / 2× / 4× speeds. Operations tabs and language changes preserve progress. Refreshing, leaving the current workspace route or choosing Reset demo restores the initial data and clears the animation queue.
 
 This is an interactive frontend demo. Data stays in the current page's memory, is not shared across devices and is not saved to a database. Handling uses operation-driven kinematic animation; cameras, WMS/ERP and live tracking are not connected. The original full demo continues to use Rapier rigid-body handling. See [Architecture](docs/architecture.en.md) for module boundaries and deployment.
 

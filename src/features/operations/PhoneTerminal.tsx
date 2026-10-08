@@ -97,7 +97,7 @@ export function PhoneTerminal({
         </span>
         <span>{SITE.id}</span>
       </div>
-      <div className="phone-frame">
+      <div className="phone-frame" data-shipment-status={shipment?.status}>
         <div className="phone-statusbar" aria-hidden="true">
           <span>plantbox</span>
           <i />
@@ -189,7 +189,11 @@ export function PhoneTerminal({
                 <span>{tr(feedback)}</span>
                 {pending > 0 && <b>{pending}</b>}
               </div>
-              <section className="phone-task" aria-label={tr("当前步骤")}>
+              <section
+                className="phone-task"
+                aria-label={tr("当前步骤")}
+                data-step={shipment.status}
+              >
                 <div className="phone-task-heading">
                   <span>{tr("当前步骤")}</span>
                   <strong>{tr(nextLabels[shipment.status])}</strong>

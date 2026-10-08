@@ -4,12 +4,14 @@
 
 ## Runtime boundaries
 
-The homepage and both demo routes run entirely in the browser and can be hosted statically:
+The embedded homepage workspace and both standalone demos run entirely in the browser and can be hosted statically:
+
+- `/`, `/#/en`: an immediately operable workspace followed by the project introduction, sharing the operations components and defaulting to phone actions on mobile.
 
 - `/#/en/demo`: the original 30-minute physical simulation, driven by its clock and Rapier handling.
 - `/#/en/operations`: interactive operations, with phone terminal actions driving yard animation.
 
-They share `WarehouseSnapshot` / `WarehouseDataSource`, inventory, shipments, activity, models and cameras while keeping independent state. Snapshot modes are `demo` and `interactive` respectively. Operations uses a page-scoped memory source with no API requests, polling, credentials or database dependency.
+They share `WarehouseSnapshot` / `WarehouseDataSource`, inventory, shipments, activity, models and cameras while keeping independent state. Snapshot modes are `demo` and `interactive` respectively. Operations uses a page-scoped memory source with no API requests, polling, credentials or database dependency. The homepage reuses the operations workspace in an `embedded` layout, sharing site navigation and avoiding a nested main region. Language changes preserve the current workspace state.
 
 ```mermaid
 flowchart LR
@@ -69,7 +71,7 @@ Deploy `dist` to Vercel or another static host to use every website route. No No
 - Completion requires a complete, fully confirmed manifest. Outbound departure marks aboard pallets `departed` without deducting stock again. Received inbound cargo remains in storage.
 - Each command carries a unique ID. Identical retries do not double-count. Conflicting reuse, duplicate scans, wrong manifests and invalid steps are rejected.
 - A successful command publishes one immutable snapshot containing shipment, pallet, inventory and activity updates. Failed operations leave the previous state intact.
-- Data stays in the current operations page's memory. Internal tabs and language changes preserve it. Reloading, leaving the operations route or resetting restores initial data. Browsers and devices do not share state.
+- Data stays in the current operations page's memory. Internal tabs and language changes preserve it. Reloading, leaving the current workspace route or resetting restores initial data. Browsers and devices do not share state.
 
 ## Animation continuity
 
@@ -79,6 +81,7 @@ Deploy `dist` to Vercel or another static host to use every website route. No No
 - The workspace uses operation-driven kinematic animation without Rapier or live tracking. The original full demo retains contacts, constraints and rigid-body cargo handling.
 - Inventory and activity update immediately on confirmation; animation may follow from the queue. Controls show pending actions, pause/resume and 1× / 2× / 4× speeds.
 - Desktop pairs the yard on the left with a phone terminal on the right. Small screens default to Actions; 3D loads only on entering Scene. Hidden scenes and browser tabs pause playback while preserving queued work.
+- An IntersectionObserver pauses 3D rendering and playback when the homepage workspace scrolls out of view. Scrolling back resumes queued work without losing data.
 - Terminal feedback distinguishes queued, playing and synchronized states for the current vehicle. Cameras reframe smoothly at action boundaries. Reset recreates the source and playback instance, clearing pending actions and scene objects.
 
 ## Earlier optional service code

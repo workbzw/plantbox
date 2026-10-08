@@ -111,7 +111,7 @@
   border-color: #dfe5f0;
   box-shadow: 0 2px 5px #263b5610;
 }
-.operations-app main {
+.operations-app .operations-content {
   max-width: 1440px;
   margin: auto;
 }
@@ -251,7 +251,7 @@
 }
 .operations-bar,
 .operations-tabs,
-.operations-app main,
+.operations-app .operations-content,
 .operations-footer {
   max-width: 1600px;
 }
@@ -275,7 +275,7 @@
 .operations-tabs button {
   padding: 10px 16px;
 }
-.operations-app main {
+.operations-app .operations-content {
   position: relative;
 }
 .operations-scene-shell[aria-hidden="true"] {
@@ -1219,5 +1219,189 @@
 @media (prefers-reduced-motion: reduce) {
   .phone-progress::-webkit-progress-value {
     transition: none;
+  }
+}
+
+/* A compact, fully interactive workspace embedded in the homepage. */
+.operations-embedded {
+  min-height: 0;
+  border: 1px solid #e2e8f1;
+  border-radius: 18px;
+  padding: 10px 14px 0;
+  overflow: clip;
+}
+.operations-embedded .operations-navigation {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.operations-embedded .operations-tabs {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0 0 10px;
+  gap: 2px;
+}
+.operations-embedded .operations-tabs button {
+  padding: 8px 12px;
+  font-size: 12px;
+}
+.operations-embedded .operations-reset {
+  flex-shrink: 0;
+  margin-bottom: 10px;
+}
+.operations-embedded .live-playback-controls {
+  max-width: none;
+  margin: 0 0 10px;
+  padding: 5px 10px;
+}
+.operations-embedded .operations-scene-layout {
+  --workspace-height: clamp(480px, calc(100dvh - 280px), 720px);
+  margin: 0;
+  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) 340px;
+}
+.operations-embedded .terminal-caption,
+.operations-embedded .terminal-hint {
+  display: none;
+}
+.operations-embedded .terminal-dock {
+  gap: 0;
+}
+.operations-embedded .phone-statusbar {
+  height: 26px;
+}
+.operations-embedded .phone-header {
+  padding: 10px 13px;
+}
+.operations-embedded .phone-scroll {
+  padding: 12px 13px 16px;
+}
+.operations-embedded .phone-vehicle-picker {
+  margin-bottom: 10px;
+}
+.operations-embedded .phone-vehicle-picker > span {
+  display: none;
+}
+.operations-embedded .phone-vehicle-picker select {
+  height: 36px;
+}
+.operations-embedded .phone-shipment {
+  padding: 10px;
+  border-radius: 10px;
+}
+.operations-embedded .phone-shipment-bottom,
+.operations-embedded .phone-plate small {
+  display: none;
+}
+.operations-embedded .phone-plate {
+  margin: 10px 0 0;
+}
+.operations-embedded .phone-plate h2 {
+  font-size: 22px;
+  margin: 0;
+}
+.operations-embedded .phone-journey {
+  margin: 14px 0 12px;
+}
+.operations-embedded .phone-playback-feedback {
+  padding: 8px 10px;
+  margin-bottom: 12px;
+}
+.operations-embedded
+  .phone-frame[data-shipment-status="expected"]
+  .phone-playback-feedback,
+.operations-embedded
+  .phone-task:is(
+    [data-step="expected"],
+    [data-step="arrived"],
+    [data-step="docked"]
+  )
+  :is(.phone-progress-label, .phone-progress) {
+  display: none;
+}
+.operations-embedded .phone-task > p {
+  margin: 6px 0 10px;
+  line-height: 1.6;
+}
+.operations-embedded .phone-footer {
+  padding: 6px 12px;
+}
+.operations-embedded .phone-home-indicator {
+  height: 16px;
+}
+.operations-embedded .operations-footer {
+  padding: 10px 2px 12px;
+  font-size: 10px;
+}
+.operations-embedded .data-page {
+  padding: 14px 0 24px;
+}
+@media (max-width: 1100px) and (min-width: 851px) {
+  .operations-embedded .operations-scene-layout {
+    grid-template-columns: minmax(0, 1fr) 310px;
+    gap: 16px;
+  }
+}
+@media (max-width: 850px) {
+  .operations-embedded {
+    padding: 8px 8px 0;
+    border-radius: 14px;
+  }
+  .operations-embedded .operations-tabs {
+    padding-bottom: 8px;
+    gap: 0;
+  }
+  .operations-embedded .operations-tabs button {
+    gap: 5px;
+    padding: 8px;
+    font-size: 11px;
+  }
+  .operations-embedded .operations-reset {
+    margin-bottom: 8px;
+  }
+  .operations-embedded .operations-mobile-switch {
+    margin: 0 0 8px;
+    top: 0;
+    scroll-margin-top: 8px;
+  }
+  .operations-embedded .live-playback-controls {
+    margin-bottom: 8px;
+    flex-wrap: nowrap;
+    gap: 6px;
+    font-size: 10px;
+  }
+  .operations-embedded .playback-actions {
+    gap: 5px;
+  }
+  .operations-embedded .operations-scene-layout {
+    margin: 0;
+  }
+  .operations-embedded .phone-header strong {
+    font-size: 15px;
+  }
+  .operations-embedded .phone-plate h2 {
+    font-size: 20px;
+  }
+  .operations-embedded .phone-frame {
+    flex: none;
+  }
+  .operations-embedded .phone-statusbar,
+  .operations-embedded .phone-home-indicator {
+    display: none;
+  }
+  .operations-embedded .operations-footer {
+    font-size: 9px;
+  }
+}
+@media (max-width: 380px) {
+  .operations-embedded .phone-task[data-step="expected"] > p {
+    display: none;
+  }
+  .operations-embedded .phone-plate h2 {
+    font-size: 18px;
+  }
+  .operations-embedded .phone-journey {
+    margin: 10px 0 8px;
   }
 }

@@ -3,7 +3,6 @@ import {
   ArrowUpRight,
   Box,
   Check,
-  ChevronRight,
   Code2,
   Forklift,
   Github,
@@ -15,33 +14,28 @@ import {
   Truck,
   Warehouse,
 } from "lucide-react";
+import type { ReactNode } from "react";
 import { readmeHref, routeHref } from "./routing";
 import type { Locale } from "./routing";
 import { LanguageSwitch, ProjectMenu } from "./WebsiteNav";
 
 const copy = {
   zh: {
-    nav: "项目介绍",
+    nav: "首页体验",
+    appIntro:
+      "点击手机 App 的「确认入场」，看货车驶入园区。继续操作，完成装卸。",
+    appNote: "纯前端交互演示 · 数据仅保留在当前页面 · 可随时重置",
+    fullDemo: "完整仓储演示",
     capability: "项目能力",
     demo: "进入仓储演示",
-    open: "开源的三维仓储实验场",
     title: ["让仓储作业，", "看得见。"],
-    intro:
-      "一座在浏览器里运转的仓储园区。跟随一辆货车、一次叉车搬运、一件货物，看到每个环节如何连接。",
-    github: "查看源代码",
-    note: "无需安装 · 打开浏览器，即刻探索",
-    status: "程序化园区 / 实际场景截帧",
-    preview: "探索这座园区",
-    figure: "WH–01 / 昆仑元仓储中心",
-    imageAlt:
-      "昆仑元仓储中心实际三维场景：开放屋顶的仓库、三个月台、货车、叉车与货物",
-    spec: ["装卸月台", "作业叉车", "交互式模拟"],
+    spec: ["装卸月台", "作业叉车", "完整演示时长"],
     minutes: "分钟",
     built: "由这些开源技术构建",
     eyebrow: "01 / 从全景，到每一件货物",
     heading: "不只看见场景，\n也看见它如何运转。",
     description:
-      "空间、设备与作业数据，在同一个时钟下协同。转动镜头、打开屋顶，或点击一个托盘，沿着货物走进现场。",
+      "在手机 App 确认一次作业，在园区观看连续动画。进入完整演示，还能探索场景、物理搬运与货物流转。",
     features: [
       [
         "可探索的完整园区",
@@ -55,13 +49,14 @@ const copy = {
       ],
       [
         "与作业一起变化的数据",
-        "库存、运单和作业流水共享交付记录。货物真正落位后，装卸进度与库存才同步更新。",
+        "库存、运单和作业流水共享交付状态。交互工作台随确认更新，完整模拟随货物落位更新。",
         "统一作业状态",
       ],
     ],
     flowLabel: "02 / 一次完整的作业",
     flowTitle: "把过程，连成一条线。",
-    flowIntro: "从入园到离场，车辆运动与货物交付共同构成一次完整的仓储作业。",
+    flowIntro:
+      "完整仓储演示中，从入园到离场，车辆运动与货物交付共同构成一次完整的仓储作业。",
     steps: [
       ["入园靠台", "货车沿转向约束行驶，停稳换向，倒车入位。"],
       ["取货搬运", "叉车对准叉孔，举升、退离，再降至运输高度。"],
@@ -83,7 +78,7 @@ const copy = {
     ],
     docs: "阅读中文文档",
     scope:
-      "当前为单园区、30 分钟的本地作业演示。所有业务数据均为模拟，尚未连接 WMS、ERP 或现场设备。",
+      "单园区演示，包含手机交互工作台与 30 分钟完整物理模拟。数据为演示数据，尚未连接 WMS、ERP 或现场设备。",
     finalTitle: "下一站，园区现场。",
     finalText: "把镜头交给你，从第一件货物开始探索。",
     footer: "开源三维仓储作业演示",
@@ -93,27 +88,20 @@ const copy = {
     repo: "源代码",
   },
   en: {
-    nav: "Overview",
+    nav: "Try the app",
+    appIntro: "Confirm arrival in the app. Watch the truck enter the yard.",
+    appNote: "Browser-only demo · Data stays in this page · Reset anytime",
+    fullDemo: "Full warehouse demo",
     capability: "Capabilities",
     demo: "Launch warehouse demo",
-    open: "An open-source 3D warehouse playground",
     title: ["Warehouse operations,", "made visible."],
-    intro:
-      "A working logistics site, right in your browser. Follow a truck, a forklift, or a single pallet to see how every part connects.",
-    github: "Explore the source",
-    note: "No installation. Just open your browser and explore.",
-    status: "PROCEDURAL WORLD / ACTUAL SCENE CAPTURE",
-    preview: "Explore the site",
-    figure: "WH–01 / KUNLUN YUAN WAREHOUSE",
-    imageAlt:
-      "Actual Kunlun Yuan Warehouse 3D scene with an open-roof warehouse, three loading docks, trucks, forklifts and cargo",
-    spec: ["Loading docks", "Working forklifts", "Interactive simulation"],
+    spec: ["Loading docks", "Working forklifts", "Full demo runtime"],
     minutes: "min",
     built: "Built with open-source tools",
     eyebrow: "01 / From the whole site to a single pallet",
     heading: "See the place.\nUnderstand the process.",
     description:
-      "Space, equipment and operations share one clock. Orbit the camera, open the roof, or select a pallet to follow the work up close.",
+      "Confirm work in the phone app and follow its animation in the yard. Explore the full simulation for physical cargo handling and a closer look at the site.",
     features: [
       [
         "A whole site to explore",
@@ -127,14 +115,14 @@ const copy = {
       ],
       [
         "Data that follows the work",
-        "Inventory, shipments and activity share delivery records. Stock and handling progress update only after cargo is placed.",
+        "Inventory, shipments and activity share delivery state. The workspace updates on confirmation; the full simulation updates when cargo is placed.",
         "Shared operation state",
       ],
     ],
     flowLabel: "02 / One complete operation",
     flowTitle: "Every movement connects.",
     flowIntro:
-      "From arrival to departure, vehicle motion and physical deliveries come together in one warehouse operation.",
+      "In the full simulation, vehicle motion and physical deliveries connect every step from arrival to departure.",
     steps: [
       [
         "Arrive & dock",
@@ -168,7 +156,7 @@ const copy = {
     ],
     docs: "Read the English docs",
     scope:
-      "A local, single-site simulation with a 30-minute runtime. All business data is simulated; no WMS, ERP or field devices are connected.",
+      "A single-site demo with a phone workspace and a 30-minute physical simulation. All data is simulated; no WMS, ERP or field devices are connected.",
     finalTitle: "Your next stop: the warehouse.",
     finalText: "Take the camera. Start with a single pallet.",
     footer: "Open-source 3D warehouse simulation",
@@ -179,13 +167,13 @@ const copy = {
   },
 };
 
-export function Landing({ locale }: { locale: Locale }) {
+export function Landing({ locale, app }: { locale: Locale; app: ReactNode }) {
   const c = copy[locale],
     demo = routeHref(locale, "demo");
   const icons = [Warehouse, Forklift, Layers3],
     flowIcons = [Truck, Forklift, Package, Route];
   return (
-    <div className="website">
+    <div className="website website-app-home">
       <header className="site-header">
         <a
           href={routeHref(locale)}
@@ -226,63 +214,37 @@ export function Landing({ locale }: { locale: Locale }) {
         </div>
       </header>
       <main id="website-main">
-        <section className="site-hero site-width">
-          <div className="hero-eyebrow">
-            <span />
-            {c.open}
-            <ChevronRight size={13} />
-          </div>
-          <h1>
-            {c.title[0]}
-            <br />
-            <span>{c.title[1]}</span>
-          </h1>
-          <p className="hero-description">{c.intro}</p>
-          <div className="hero-actions">
-            <a className="site-button" href={demo}>
-              <Play size={15} fill="currentColor" />
-              {c.demo}
-              <ArrowRight size={17} />
-            </a>
-            <a
-              className="site-button site-button-quiet"
-              href="https://github.com/workbzw/plantbox"
-              target="_blank"
-              rel="noreferrer"
-            >
-              <Github size={18} />
-              {c.github}
-              <ArrowUpRight size={14} />
+        <section
+          className="live-hero"
+          aria-label={locale === "zh" ? "首页交互体验" : "Interactive homepage"}
+        >
+          <div className="live-hero-intro">
+            <div>
+              <p className="live-hero-kicker">
+                BROWSER APP / WAREHOUSE OPERATIONS
+              </p>
+              <h1>
+                {c.title[0]}
+                {locale === "en" ? " " : ""}
+                <span>{c.title[1]}</span>
+              </h1>
+              <p className="live-hero-description">{c.appIntro}</p>
+            </div>
+            <a className="live-hero-link" href={demo}>
+              <Play size={14} />
+              {c.fullDemo}
+              <ArrowUpRight size={15} />
             </a>
           </div>
-          <p className="hero-note">{c.note}</p>
-          <a className="hero-scene" href={demo} aria-label={c.preview}>
-            <div className="scene-caption">
-              <span>
-                <span className="live-dot" />
-                {c.figure}
-              </span>
-              <span className="scene-capture-label">{c.status}</span>
-            </div>
-            <img
-              className="hero-warehouse-image"
-              src={`/images/kunlun-yuan-warehouse-${locale}.webp`}
-              alt={c.imageAlt}
-              width="1600"
-              height="1000"
-              fetchPriority="high"
-            />
-            <div className="scene-explore">
-              <span className="scene-play">
-                <Play size={19} fill="currentColor" />
-              </span>
-              {c.preview}
-              <ArrowUpRight size={17} />
-            </div>
-            <div className="scene-coordinate">
-              31.1° N / 121.4° E <span>WH-01</span>
-            </div>
-          </a>
+          <div id="homepage-app" className="homepage-app">
+            {app}
+          </div>
+          <p className="live-hero-note">{c.appNote}</p>
+        </section>
+        <section
+          className="site-width home-project-facts"
+          aria-label={locale === "zh" ? "项目概况" : "Project at a glance"}
+        >
           <div className="site-facts">
             {c.spec.map((label, i) => (
               <div key={label}>

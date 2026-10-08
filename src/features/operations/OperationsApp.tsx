@@ -43,14 +43,26 @@ const compactSnapshot = () => window.matchMedia(compactQuery).matches;
 function OperationsView({
   locale,
   onReset,
+  embedded,
 }: {
   locale: Locale;
   onReset: () => void;
+  embedded: boolean;
 }) {
   const snapshot = useWarehouseSnapshot();
   const page = useUIStore((s) => s.page);
   const [sceneVisited, setSceneVisited] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const viewport = useRef<HTMLDivElement>(null);
+  const [inViewport, setInViewport] = useState(true);
+  useEffect(() => {
+    if (!embedded || !viewport.current) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      setInViewport(entry.isIntersecting);
+    });
+    observer.observe(viewport.current);
+    return () => observer.disconnect();
+  }, [embedded]);
   const compact = useSyncExternalStore(
     subscribeCompact,
     compactSnapshot,
@@ -73,7 +85,10 @@ function OperationsView({
         }),
       );
   };
-  const sceneVisible = page === "scene" && (!compact || mobilePane === "scene");
+  const sceneVisible =
+    page === "scene" &&
+    (!compact || mobilePane === "scene") &&
+    (!embedded || inViewport);
   const watchScene = () => {
     useUIStore.getState().setPage("scene");
     switchPane("scene");
@@ -92,53 +107,76 @@ function OperationsView({
     { page: "inventory", name: "库存管理", icon: Boxes },
     { page: "activity", name: "作业流水", icon: Activity },
   ];
+  const Content = embedded ? "div" : "main";
   return (
-    <div className="operations-app">
-      <header className="topbar">
-        <a className="brand" href={routeHref(locale)}>
-          <img src="/favicon.svg" alt="" />
-          <strong>plantbox</strong>
-        </a>
-        <ProjectMenu locale={locale} />
-        <div className="header-actions">
-          <LanguageSwitch locale={locale} page="operations" />
-          <button
-            className="text-button operations-reset"
-            aria-label={tr("重置演示")}
-            title={tr("重置演示")}
-            onClick={onReset}
-          >
-            <RotateCcw size={15} />
-            <span>{tr("重置演示")}</span>
-          </button>
-        </div>
-      </header>
-      <div className="operations-bar">
-        <div>
-          <span className="eyebrow">WAREHOUSE OPERATIONS</span>
-          <h1>{tr("作业管理")}</h1>
-        </div>
-        <span className="connection-state connected" role="status">
-          <i />
-          {tr("前端交互演示")}
-        </span>
-      </div>
-      <div className="sample-banner">
-        {tr("演示数据仅保留在当前页面，刷新或重置后恢复初始状态。")}
-      </div>
-      <>
-        <nav className="operations-tabs" aria-label={tr("主导航")}>
-          {nav.map((item) => (
+    <div
+      className={`operations-app${embedded ? " operations-embedded" : ""}`}
+      ref={viewport}
+    >
+      {!embedded && (
+        <header className="topbar">
+          <a className="brand" href={routeHref(locale)}>
+            <img src="/favicon.svg" alt="" />
+            <strong>plantbox</strong>
+          </a>
+          <ProjectMenu locale={locale} />
+          <div className="header-actions">
+            <LanguageSwitch locale={locale} page="operations" />
             <button
-              key={item.page}
-              aria-current={page === item.page ? "page" : undefined}
-              onClick={() => useUIStore.getState().setPage(item.page)}
+              className="text-button operations-reset"
+              aria-label={tr("重置演示")}
+              title={tr("重置演示")}
+              onClick={onReset}
             >
-              <item.icon size={17} />
-              {tr(item.name)}
+              <RotateCcw size={15} />
+              <span>{tr("重置演示")}</span>
             </button>
-          ))}
-        </nav>
+          </div>
+        </header>
+      )}
+      {!embedded && (
+        <div className="operations-bar">
+          <div>
+            <span className="eyebrow">WAREHOUSE OPERATIONS</span>
+            <h1>{tr("作业管理")}</h1>
+          </div>
+          <span className="connection-state connected" role="status">
+            <i />
+            {tr("前端交互演示")}
+          </span>
+        </div>
+      )}
+      {!embedded && (
+        <div className="sample-banner">
+          {tr("演示数据仅保留在当前页面，刷新或重置后恢复初始状态。")}
+        </div>
+      )}
+      <>
+        <div className="operations-navigation">
+          <nav className="operations-tabs" aria-label={tr("主导航")}>
+            {nav.map((item) => (
+              <button
+                key={item.page}
+                aria-current={page === item.page ? "page" : undefined}
+                onClick={() => useUIStore.getState().setPage(item.page)}
+              >
+                <item.icon size={17} />
+                {tr(item.name)}
+              </button>
+            ))}
+          </nav>
+          {embedded && (
+            <button
+              className="text-button operations-reset"
+              onClick={onReset}
+              aria-label={tr("重置演示")}
+              title={tr("重置演示")}
+            >
+              <RotateCcw size={15} />
+              <span>{tr("重置演示")}</span>
+            </button>
+          )}
+        </div>
         {compact && page === "scene" && (
           <div
             className="operations-mobile-switch"
@@ -163,7 +201,7 @@ function OperationsView({
           </div>
         )}
         <PlaybackControls sceneVisible={sceneVisible} onWatch={watchScene} />
-        <main>
+        <Content className="operations-content">
           {initialized && (sceneVisited || page === "scene") && (
             <div
               className="operations-scene-shell"
@@ -186,7 +224,7 @@ function OperationsView({
           )}
           {page === "inventory" && <InventoryPage />}
           {page === "activity" && <ActivityPage />}
-        </main>
+        </Content>
         <footer className="operations-footer">
           <span>
             {tr("演示操作记录")} · {snapshot.events.length}
@@ -199,7 +237,13 @@ function OperationsView({
     </div>
   );
 }
-export default function OperationsApp({ locale }: { locale: Locale }) {
+export default function OperationsApp({
+  locale,
+  embedded = false,
+}: {
+  locale: Locale;
+  embedded?: boolean;
+}) {
   const [session, setSession] = useState(0);
   const source = useMemo(() => createInteractiveSource(), [session]);
   return (
@@ -207,6 +251,7 @@ export default function OperationsApp({ locale }: { locale: Locale }) {
       <LivePlaybackProvider>
         <OperationsView
           locale={locale}
+          embedded={embedded}
           onReset={() => setSession((value) => value + 1)}
         />
       </LivePlaybackProvider>

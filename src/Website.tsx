@@ -75,7 +75,32 @@ export default function Website() {
     document.body.style.cursor = "";
   }, [page]);
   return page === "home" ? (
-    <Landing locale={locale} />
+    <Landing
+      locale={locale}
+      app={
+        <DemoBoundary english={locale === "en"}>
+          <Suspense
+            fallback={
+              <div className="homepage-app-loading" role="status">
+                <img src="/favicon.svg" alt="" width="40" height="40" />
+                <strong>
+                  {locale === "zh"
+                    ? "正在准备交互工作台"
+                    : "Preparing your workspace"}
+                </strong>
+                <p>
+                  {locale === "zh"
+                    ? "在手机 App 中操作，观看园区动画"
+                    : "Operate the phone app and watch the yard respond"}
+                </p>
+              </div>
+            }
+          >
+            <OperationsApp locale={locale} embedded />
+          </Suspense>
+        </DemoBoundary>
+      }
+    />
   ) : (
     <DemoBoundary key={page} english={locale === "en"}>
       <Suspense

@@ -1207,3 +1207,115 @@ html[lang="en"] .app-shell .global-search span {
     font-size: 8px;
   }
 }
+
+/* The homepage opens with a working app; the project story follows below. */
+.website-app-home .site-header {
+  max-width: 1600px;
+  height: 64px;
+  padding-inline: 32px;
+}
+.live-hero {
+  width: calc(100% - 64px);
+  max-width: 1536px;
+  margin: auto;
+  padding-top: 20px;
+}
+.live-hero-intro {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+  margin-bottom: 16px;
+}
+.live-hero-kicker {
+  color: #8395b3;
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: 1.4px;
+}
+.live-hero-intro h1 {
+  font-family: Manrope, "PingFang SC", sans-serif;
+  font-size: clamp(28px, 3vw, 40px);
+  font-weight: 700;
+  letter-spacing: -1.4px;
+  line-height: 1.25;
+  margin: 7px 0;
+}
+.live-hero-intro h1 span {
+  color: var(--site-blue);
+}
+.live-hero-description {
+  color: #718099;
+  font-size: 13px;
+  line-height: 1.7;
+  max-width: 820px;
+}
+.live-hero-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #4466b4;
+  font-size: 12px;
+  text-decoration: none;
+  white-space: nowrap;
+  padding: 10px 0;
+}
+.live-hero-note {
+  font-size: 10px;
+  color: #93a0b4;
+  text-align: center;
+  line-height: 1.7;
+  margin: 12px 0 0;
+}
+.homepage-app-loading {
+  min-height: 480px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 16px;
+  border: 1px solid #e2e8f1;
+  border-radius: 18px;
+  background: #f5f7fa;
+  color: #526b91;
+}
+.homepage-app-loading p {
+  font-size: 12px;
+  color: #8998ad;
+}
+.home-project-facts .site-facts {
+  margin-top: 26px;
+}
+@media (max-width: 850px) {
+  .website-app-home .site-header {
+    height: 58px;
+    padding-inline: 16px;
+  }
+  .live-hero {
+    width: calc(100% - 28px);
+    padding-top: 14px;
+  }
+  .live-hero-intro {
+    margin-bottom: 12px;
+  }
+  .live-hero-kicker,
+  .live-hero-link {
+    display: none;
+  }
+  .live-hero-intro h1 {
+    font-size: 28px;
+    letter-spacing: -0.9px;
+    margin: 0 0 7px;
+  }
+  .live-hero-description {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .live-hero-note {
+    font-size: 9px;
+  }
+}
+@media (max-width: 380px) {
+  .live-hero-intro h1 {
+    font-size: 24px;
+  }
+}
