@@ -23,7 +23,7 @@ export function CodexPromotion({
         <span>{title}</span>
         <ArrowUpRight size={18} strokeWidth={1.6} aria-hidden="true" />
       </a>
-      <SponsorContact locale={locale} qrSrc={`${import.meta.env.BASE_URL}images/sponsor-contact.png`} />
+      <SponsorContact locale={locale} wechatSrc={`${import.meta.env.BASE_URL}images/sponsor-wechat.png`} whatsappSrc={`${import.meta.env.BASE_URL}images/sponsor-whatsapp.png`} />
     </div>
   );
 }
