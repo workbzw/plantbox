@@ -18,10 +18,14 @@ import type { ReactNode } from "react";
 import { readmeHref, routeHref } from "./routing";
 import type { Locale } from "./routing";
 import { LanguageSwitch, ProjectMenu } from "./WebsiteNav";
+import { CodexPromotion } from "./CodexPromotion";
 
 const copy = {
   zh: {
     nav: "首页体验",
+    promotionLabel: "广告",
+    promotionTitle: "Codex 低价折扣",
+    filingLabel: "网站备案信息",
     appIntro:
       "点击手机 App 的「确认入场」，看货车驶入园区。继续操作，完成装卸。",
     appNote: "纯前端交互演示 · 数据仅保留在当前页面 · 可随时重置",
@@ -89,6 +93,9 @@ const copy = {
   },
   en: {
     nav: "Try the app",
+    promotionLabel: "Ad",
+    promotionTitle: "Codex Low-price Deals",
+    filingLabel: "Website registrations",
     appIntro: "Confirm arrival in the app. Watch the truck enter the yard.",
     appNote: "Browser-only demo · Data stays in this page · Reset anytime",
     fullDemo: "Full warehouse demo",
@@ -185,6 +192,7 @@ export function Landing({ locale, app }: { locale: Locale; app: ReactNode }) {
             plantbox<span className="brand-dot">.</span>
           </span>
         </a>
+        <CodexPromotion label={c.promotionLabel} title={c.promotionTitle} locale={locale} />
         <nav className="site-nav" aria-label={c.menu}>
           <a
             className="site-nav-overview"
@@ -446,6 +454,23 @@ export function Landing({ locale, app }: { locale: Locale; app: ReactNode }) {
             {c.top} ↑
           </button>
         </nav>
+        <div id="website-filings" className="site-legal" aria-label={c.filingLabel}>
+          <a
+            href="https://beian.miit.gov.cn/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            京ICP备2022031958号-5
+          </a>
+          <a
+            href="https://beian.mps.gov.cn/#/query/webSearch?code=11011402013434"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <img src="/images/public-security.png" width="20" height="20" alt="" />
+            <span>京公网安备11011402013434号</span>
+          </a>
+        </div>
       </footer>
     </div>
   );

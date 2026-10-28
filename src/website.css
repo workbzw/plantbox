@@ -123,6 +123,58 @@
 .brand-dot {
   color: var(--site-blue);
 }
+.site-promotion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.site-promotion-label {
+  color: #748198;
+  font-size: 9px;
+  white-space: nowrap;
+}
+.site-promotion-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid #2454ff;
+  border-radius: 5px;
+  background: #2454ff;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  box-shadow: 0 3px 10px #2454ff20;
+  transition: background .2s, border-color .2s;
+}
+.site-promotion-link > svg { flex-shrink: 0; }
+.site-promotion-link:hover { background: #183fd2; border-color: #183fd2; }
+.site-promotion-contact {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 7px 11px;
+  border: 1px dashed #d4d4cd;
+  border-radius: 5px;
+  background: transparent;
+  color: #192a42;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background .2s, border-color .2s, color .2s;
+}
+.site-promotion-contact > svg { flex-shrink: 0; }
+.site-promotion-contact:hover { background: #2454ff; border-color: #2454ff; border-style: solid; color: #fff; }
 .site-nav {
   display: flex;
   gap: 32px;
@@ -747,7 +799,9 @@
 .site-footer {
   padding: 28px 0 40px;
   border-top: 1px solid #e9edf4;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 22px;
   align-items: center;
   justify-content: space-between;
 }
@@ -777,6 +831,36 @@
   gap: 5px;
   text-decoration: none;
 }
+.site-footer > .site-legal {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px 24px;
+  border-top: 1px solid #e9edf4;
+  padding-top: 18px;
+  font-size: 11px;
+  line-height: 1.8;
+  color: #66748b;
+}
+.site-legal a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.site-legal img {
+  display: block;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+.site-legal a:hover { color: var(--site-blue); text-decoration: underline; text-underline-offset: 3px; }
 /* English dashboard labels need more room than their Chinese equivalents. */
 .app-shell .brand {
   text-decoration: none;
@@ -824,7 +908,7 @@ html[lang="en"] .app-shell .global-search span {
     padding-top: 90px;
   }
 }
-@media (max-width: 1100px) {
+@media (max-width: 1200px) {
   .site-header {
     padding-inline: 32px;
   }
@@ -1096,7 +1180,8 @@ html[lang="en"] .app-shell .global-search span {
     font-size: 11px;
   }
   .site-footer {
-    flex-direction: column;
+    grid-template-columns: 1fr;
+    justify-items: center;
     gap: 24px;
     padding-block: 25px;
   }
@@ -1210,9 +1295,26 @@ html[lang="en"] .app-shell .global-search span {
 
 /* The homepage opens with a working app; the project story follows below. */
 .website-app-home .site-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-areas: "brand promotion navigation actions";
   max-width: 1600px;
   height: 64px;
   padding-inline: 32px;
+}
+.website-app-home .site-header > .site-brand { grid-area: brand; }
+.website-app-home .site-header > .site-promotion { grid-area: promotion; justify-self: start; }
+.website-app-home .site-header > .site-nav { grid-area: navigation; }
+.website-app-home .site-header > .site-header-actions { grid-area: actions; }
+@media (max-width: 1100px) {
+  .website-app-home .site-header {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "brand navigation actions" "promotion promotion promotion";
+    height: auto;
+    min-height: 64px;
+    row-gap: 8px;
+    padding-block: 12px;
+  }
 }
 .live-hero {
   width: calc(100% - 64px);
@@ -1287,9 +1389,13 @@ html[lang="en"] .app-shell .global-search span {
 }
 @media (max-width: 850px) {
   .website-app-home .site-header {
-    height: 58px;
+    height: auto;
+    min-height: 58px;
+    padding-block: 10px;
     padding-inline: 16px;
   }
+  .site-promotion-label { font-size: 8px; }
+  .site-promotion-link { font-size: 11px; padding-inline: 12px; }
   .live-hero {
     width: calc(100% - 28px);
     padding-top: 14px;
@@ -1315,7 +1421,32 @@ html[lang="en"] .app-shell .global-search span {
   }
 }
 @media (max-width: 380px) {
+  .site-promotion-link { font-size: 10px; padding-inline: 10px; }
   .live-hero-intro h1 {
     font-size: 24px;
   }
+}
+
+/* Shared advertising partnership dialog, matching the HelloWorld contact entry. */
+body:has(.site-sponsor-dialog[open]) { overflow: hidden; }
+.site-sponsor-dialog { position: fixed; width: min(400px, calc(100% - 36px)); max-height: calc(100dvh - 36px); box-sizing: border-box; margin: auto; padding: 37px 30px 27px; border: 0; border-top: 4px solid #2454ff; border-radius: 0; background: #f8f7f4; color: #141414; font: inherit; text-align: center; overflow: auto; box-shadow: 0 25px 100px #080e2640; }
+.site-sponsor-dialog::backdrop { background: #0b10249c; backdrop-filter: blur(7px); }
+.site-sponsor-close { position: absolute; top: 6px; right: 7px; display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 0; background: transparent; color: #696964; cursor: pointer; }
+.site-sponsor-close:hover { background: #e9e9e5; color: #141414; }
+.site-sponsor-close:focus-visible { outline: 2px solid #2454ff; outline-offset: -3px; }
+.site-sponsor-dialog .site-sponsor-eyebrow { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 7px; line-height: 1.4; letter-spacing: .6px; margin: 7px 0 18px; color: #2454ff; }
+.site-sponsor-dialog h2 { margin: 0 0 13px; color: #141414; font-size: 30px; font-weight: 600; line-height: 1.4; letter-spacing: -1px; white-space: pre-line; }
+.site-sponsor-dialog .site-sponsor-description { margin: 0; color: #696964; font-size: 11px; line-height: 1.8; }
+.site-sponsor-qr { display: block; width: min(210px, 100%); height: auto; box-sizing: border-box; padding: 8px; margin: 24px auto 20px; border: 1px solid #d7d7d1; background: white; }
+.site-sponsor-dialog .site-sponsor-note { margin: 0; color: #696964; font-size: 9px; line-height: 1.8; }
+@media (max-width: 600px) {
+  .site-promotion-contact { font-size: 10px; gap: 7px; padding-inline: 9px; }
+  .site-sponsor-dialog { padding: 34px 25px 24px; }
+  .site-sponsor-dialog h2 { font-size: 28px; }
+  .site-sponsor-dialog .site-sponsor-eyebrow { font-size: 6px; }
+  .site-sponsor-dialog .site-sponsor-note { font-size: 8px; }
+}
+@media (max-width: 360px) {
+  .site-promotion { gap: 6px; }
+  .site-promotion-contact { font-size: 9px; gap: 6px; padding-inline: 8px; }
 }

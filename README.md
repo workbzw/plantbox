@@ -97,6 +97,18 @@ node scripts/measure-loading.cjs 'http://localhost:4173/#/zh/demo' /tmp/plantbox
 
 网站使用哈希路由；静态托管无需为上述页面单独配置服务端路由回退。当前资源路径以 `/` 开头，部署到域名根目录；部署到子路径前需统一调整 Vite `base`、图片及字体资源地址。
 
+## 百度访问与广告点击统计
+
+2026-10-28 已在百度统计免费版创建 `plantbox.helloworld.today`（后台站点 ID：`23639937`）。`public/analytics-config.js` 已填入该站公开的 32 位 `trackingId` 并启用，只允许该生产域名加载 `https://hm.baidu.com/hm.js`。本地预览不发送数据。重新构建并部署到域名根目录后才会开始采集，后台创建站点不等于已经上线。配置文件使用 `Cache-Control: no-cache`，上传后刷新相应 CDN 缓存；停用时设 `enabled: false`。公开配置不能填写账号密码或 API token。
+
+在百度后台选择本站，到「访问分析 → 事件分析/事件跟踪」查看。事件类型（category）为 `plantbox`，Codex 低价折扣的动作（action）为 `codex-ad-click`、标签（label）为 `codex-discount`；广告合作的动作为 `promotion-open`、标签为 `partnership`。HelloWorld、PixOffice 使用各自的独立统计站点，动作与标签相同。
+
+广告合作沿用 HelloWorld 的微信二维码 `public/images/sponsor-contact.png`，支持中英文、关闭按钮、Escape、遮罩关闭及焦点返回；修饰键和中键可直接打开二维码图片。点击监听不拦截或延迟跳转。
+
+初始浏览与哈希路由变化通过 `_trackPageview` 发送，已关闭 SDK 的初始自动 PV。请勿同时开启后台的 SPA 自动采集，以免重复计数。SDK 加载期间最多暂存 20 条点击/路由动作，仅在页面内存中保存；加载失败后丢弃，不影响网站。脚本拦截、网络故障可能漏记，历史数据不能补回。广告落地页的付款、成交不在本次监听范围内。
+
+百度后台提示，代码正确安装后通常约 20 分钟可查看分析数据。发布后到「代码安装检查」验证，再查看事件报表。官方参考：[事件 API](https://tongji.baidu.com/web/help/article?id=236&type=0)、[浏览 API](https://tongji.baidu.com/web/help/article?id=235&type=0)。
+
 ## 模拟边界
 
 这是规划中的单站点首版，尚未扩展到五个站点。完整仓储演示与作业管理均使用前端演示数据，尚未接入 WMS、ERP 或现场设备。
